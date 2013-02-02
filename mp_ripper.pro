@@ -44,6 +44,7 @@
 ; 07/06/2012 Written by David G. Grier, New York University
 ; 10/22/2012 Bhaskar Jyoti Krishnatreya and DGG: Fix code for other formats.
 ; 02/02/2013 BJK fixed code for other formats
+; 02/02/2013 DGG Fix order test.
 ;
 ; Copyright (c) 2012-2013 David G. Grier and Bhaskar Jyoti Krishnatreya
 ;-
@@ -65,9 +66,11 @@ if n_params() ne 2 then begin
 endif
 
 ; Create player object
-if ~arg_present(order) then order =  1 ; flip by default
+if n_elements(order) ne 1 then order = 1 ; flip by default
+
 player = dgggrmplayer(filename, $
                       greyscale = greyscale, dimensions = dimensions, order = order)
+
 if ~isa(player, 'DGGgrMPlayer') then begin
    message, umsg, /inf
    message, 'could not open '+filename, /inf
