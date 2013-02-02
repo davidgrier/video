@@ -43,8 +43,9 @@
 ; MODIFICATION HISTORY:
 ; 07/06/2012 Written by David G. Grier, New York University
 ; 10/22/2012 Bhaskar Jyoti Krishnatreya and DGG: Fix code for other formats.
+; 02/02/2013 BJK fixed code for other formats
 ;
-; Copyright (c) 2012 David G. Grier and Bhaskar Jyoti Krishnatreya
+; Copyright (c) 2012-2013 David G. Grier and Bhaskar Jyoti Krishnatreya
 ;-
 
 pro mp_ripper, filename, prefix, $
@@ -101,7 +102,6 @@ if ~file_test(dir, /directory, /write) then begin
    message, 'Make sure you have write permission for the specified directory', /inf
    return
 endif
-
 lev3 = 0L
 lev2 = 0L
 lev1 = 0L
@@ -109,9 +109,9 @@ while ~player.eof do begin
    ; Write next frame into working directory
    fn = string(lev1, lev2, lev3, format = fmt)
    if dogdf then $
-      write_gdf, player.next, dir+fn $
+      write_gdf, player.next, dir+fn  $
    else $
-      write_image, dir+fn, player.next
+      write_image, dir+fn, format, player.next
 
    ; Create new directory if necessary
    if (++lev3 gt 99) then begin
