@@ -127,6 +127,7 @@
 ; 09/24/2012 DGG Simplified DIMENSIONS code to accommodate Rewind
 ;    method.
 ; 01/15/2013 DGG Overloaded PRINT and HELP.
+; 02/05/2013 DGG Changed grayscale mplayer option to -vf=y8,scale.
 ;
 ; Copyright (c) 2012 David G. Grier
 ;-
@@ -253,8 +254,8 @@ options = ' -really-quiet' + $     ; suppress startup messages
 ; Video format ...
 ;     NOTE: to list available raw video formats:
 ;     $ mencoder -ovc raw -vf format=fmt=help
-fmt = (self.greyscale) ? ' -vf format=y8' : $ ; 8-bit grayscale [w, h]
-      ' -vf format=rgb24'                     ; 24-bit RGB [3, w, h]
+fmt = (self.greyscale) ? ' -vf format=y8,scale' : $ ; 8-bit grayscale [w, h]
+      ' -vf format=rgb24'                           ; 24-bit RGB [3, w, h]
 ; optionally scale image dimensions ...
 if ~array_equal(self.dimensions, self.geometry) then $
    fmt += string(self.dimensions, format = '(",scale=",I0,":",I0)')
