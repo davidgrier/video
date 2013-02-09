@@ -129,7 +129,7 @@
 ; 01/15/2013 DGG Overloaded PRINT and HELP.
 ; 02/05/2013 DGG Changed grayscale mplayer option to -vf=y8,scale.
 ;
-; Copyright (c) 2012 David G. Grier
+; Copyright (c) 2012-2013 David G. Grier
 ;-
 ;;;;;
 ;
