@@ -29,7 +29,9 @@
 ;    order       [IGS] FLAG: if set, flip image vertically
 ;    next        [ G ] Array containing data from the next video frame
 ;    framenumber [ G ] Current frame number
+;    bitrate     [ G ] Intended bitrate
 ;    fps         [ G ] Intended playback rate [frames/s]
+;    aspect      [ G ] Intended aspect ratio
 ;    length      [ G ] Length of video [s]
 ;    codec       [ G ] String describing the video's codec
 ;    eof         [ G ] FLAG: end-of-file
@@ -128,6 +130,7 @@
 ;    method.
 ; 01/15/2013 DGG Overloaded PRINT and HELP.
 ; 02/05/2013 DGG Changed grayscale mplayer option to -vf=y8,scale.
+; 02/19/2013 DGG added Get method for ASPECT and BITRATE properties.
 ;
 ; Copyright (c) 2012-2013 David G. Grier
 ;-
@@ -377,7 +380,9 @@ pro DGGgrMPlayer::GetProperty, eof = eof,                 $
                                greyscale = greyscale,     $
                                grayscale = grayscale,     $
                                order = order,             $
+                               bitrate = bitrate,         $
                                fps = fps,                 $
+                               aspect = aspect,           $
                                length = length,           $
                                codec = codec,             $
                                seekable = seekable
@@ -409,7 +414,9 @@ if arg_present(dimensions)  then dimensions = self.dimensions
 if arg_present(greyscale)   then greyscale = self.greyscale
 if arg_present(grayscale)   then grayscale = self.greyscale
 if arg_present(order)       then order = self.order
+if arg_present(bitrate)     then bitrate = self.bitrate
 if arg_present(fps)         then fps = self.fps
+if arg_present(aspect)      then aspect = self.aspect
 if arg_present(length)      then length = self.length
 if arg_present(codec)       then codec = self.codec
 if arg_present(seekable)    then seekable = self.seekable
