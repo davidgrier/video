@@ -154,7 +154,7 @@ endif
 if self.eof then return
 
 readu, self.lun, *self.data
-self.framenumber += 1
+self.framenumber++
 
 end
 
