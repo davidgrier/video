@@ -48,12 +48,14 @@ individual images taken from video streams.
 
 ## Usage notes
 
-IDL 8.2.X includes its own version of the FFmpeg libraries.  These may
+IDL 8.2.X includes its own version of the FFmpeg libraries.
+These may limit the functionality of DGGffVideoRead, and may
 not be compatible with the installed versions of mplayer and mencoder
 on which the DGGgrMPlayer object relies.  If this is a problem, follow
 the published [instructions](http://www.exelisvis.com/docs/CreatingVideo.html)
 on _Replacing the FFmpeg Version_.
 
-IDLVideo relies internally on named pipes, which also are called fifos.
+DGGgrMPlayer relies internally on named pipes, which also are called fifos.
 Fifos are available on UNIX-like systems, including MacOS, but not under
 Windows.  Consequently, IDLVideo does not (yet) work on Windows systems.
+DGGffVideoRead should be truly cross-platform compatible.
