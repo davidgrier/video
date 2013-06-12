@@ -34,6 +34,8 @@ to rip a video file into individual frames that are stored on disk.
 
 * **deinterlace**: Deinterlaces an image.
 
+* **rgb2luma**: Convert an RGB image to grayscale.
+
 ## Usage notes
 
 IDL 8.2.X includes its own version of the FFmpeg libraries.  These may
