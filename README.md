@@ -10,6 +10,10 @@ IDLvideo is licensed under the GPLv3.
 
 ## What it does
 
+* **DGGffVideoRead__define**: Extends the native IDL 
+IDLffVideoRead object class to provide the functionality
+of DGGgrMPlayer.
+
 IDLvideo uses the open-source MPlayer and MEncoder programs
 to open and read video files.  Each frame of the video then
 can be transferred into IDL as an array of bytes for further
