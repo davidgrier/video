@@ -11,11 +11,14 @@ IDLvideo is licensed under the GPLv3.
 ## What it does
 
 The IDLvideo routines provide access to individual frames
-from video files.  Native support for reading video files
-was added in IDL 8.2.3.  The DGGffVideoRead object class
+from video files.  The DGGffVideoRead object class
 makes use of the native support for reading video files
-that was added in IDL 8.2.3.  To read video files with
-earlier versions of IDL, use the DGGgrMPlayer object class.
+that was added in IDL 8.2.3.  DGGgrMPlayer uses the external
+programs mplayer and mencoder to extract frames and pipe them
+into IDL.  Although DGGffVideoRead is simpler and operates
+on all platforms, it is limited by the ffmpeg libraries that
+ship with IDL.  DGGgrMPlayer, by contrast, can read any video
+format supported by mplayer, and thus is more functional.
 
 * **DGGffVideoRead__define**: Extends the native IDL 
 IDLffVideoRead object class to provide the functionality
