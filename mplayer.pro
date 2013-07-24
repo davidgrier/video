@@ -20,7 +20,7 @@
 ;        Default: intrinsic dimensions
 ;
 ; KEYWORD FLAGS:
-;    greyscale: If set, cast video to greyscale.
+;    greyscale (or grayscale): If set, cast video to greyscale.
 ;        Default: RGB color
 ;
 ;    order: If set, flip frames vertically
@@ -46,8 +46,9 @@
 ;    DGGgrMPlayer.
 ; 07/05/2012 DGG Further consistency upgrades.  Fixed code for
 ;    parsing ORDER keyword.
+; 07/24/2013 DGG Allow "gray" as well as "grey".
 ;
-; Copyright (c) 2012 David G. Grier
+; Copyright (c) 2012-2013 David G. Grier
 ;-
 ;;;;;
 ;
@@ -137,15 +138,16 @@ end
 ;
 pro mplayer, filename, $
              greyscale = greyscale, $
+             grayscale = grayscale, $
              dimensions = dimensions, $
              order = order
 
 COMPILE_OPT IDL2
 
 ; Create player object
+gray = keyword_set(grayscale) or keyword_set(greyscale)
 order = (arg_present(order)) ? keyword_set(order) : 1 ; flip by default
-player = DGGgrMPlayer(filename, $
-                      greyscale=greyscale, dimensions=dimensions, order=order)
+player = DGGgrMPlayer(filename, greyscale=gray, dimensions=dimensions, order=order)
 if ~isa(player, 'DGGgrMPlayer') then return
 
 ; Define widget hierarchy
