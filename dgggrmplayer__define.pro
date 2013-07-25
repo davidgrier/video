@@ -51,13 +51,13 @@
 ;    GetProperty
 ;    SetProperty
 ;
-;    ReadFrame
+;    Read
 ;        Read the next video frame into the DATA property.
 ;        The frame data can be obtained with the GetProperty method.
 ;            Example:
-;            IDL> player->ReadFrame
+;            IDL> player->Read
 ;            IDL> frame = player.data
-;        ReadFrame is called implicitly when getting the NEXT
+;        Read is called implicitly when getting the NEXT
 ;        property.  The foregoing example is equivalent to
 ;            Example:
 ;            IDL> frame = player.next
@@ -65,8 +65,12 @@
 ;        and loads a blank image into DATA.  To avoid getting a blank
 ;        frame ...
 ;            Example:
-;            IDL> player->ReadFrame
+;            IDL> player->Read
 ;            IDL> if ~player.eof then frame = player.data
+;
+;    Read()
+;	Read the next video frame into the DATA property
+;       and return the data.
 ;
 ;    Rewind
 ;        Start reading current video file from the beginning.
@@ -131,16 +135,17 @@
 ; 01/15/2013 DGG Overloaded PRINT and HELP.
 ; 02/05/2013 DGG Changed grayscale mplayer option to -vf=y8,scale.
 ; 02/19/2013 DGG added Get method for ASPECT and BITRATE properties.
+; 07/25/2013 DGG Renamed ReadFrame to Read.  Added Read() method.
 ;
 ; Copyright (c) 2012-2013 David G. Grier
 ;-
 ;;;;;
 ;
-; DGGgrMPlayer::ReadFrame
+; DGGgrMPlayer::Read
 ;
 ; Read next frame from video stream
 ;
-pro DGGgrMPlayer::ReadFrame
+pro DGGgrMPlayer::Read
 
 COMPILE_OPT IDL2, HIDDEN
 
@@ -156,6 +161,20 @@ if self.eof then return
 readu, self.lun, *self.data
 self.framenumber++
 
+end
+
+;;;;;
+;
+; DGGgrMPlayer::Read()
+;
+; Reads next video frame and returns the data
+;
+function DGGgrMPlayer::Read
+
+COMPILE_OPT IDL2, HIDDEN
+
+self->read
+return, *self.data
 end
 
 ;;;;;
@@ -395,8 +414,8 @@ if arg_present(eof) then begin
 endif
 
 if arg_present(next) then begin
-   self->ReadFrame
-   next = *(self.data)
+   self->Read
+   next = *self.data
    return
 endif
 
