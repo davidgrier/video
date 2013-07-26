@@ -48,6 +48,7 @@
 ;    parsing ORDER keyword.
 ; 07/24/2013 DGG Allow "gray" as well as "grey".
 ; 07/26/2013 DGG compatibility with new DGGgrMPlayer syntax.
+;    Handle file selection more gracefully.
 ;
 ; Copyright (c) 2012-2013 David G. Grier
 ;-
@@ -94,7 +95,7 @@ case tag_names(event, /structure_name) of
          'REWIND': begin
             (*s).player.rewind
             (*s).pause = 1
-            (*s).im->putdata, (*s).player.next
+            (*s).im->putdata, (*s).player.read()
          end
          'DONE': begin
             widget_control, event.top, /destroy
@@ -145,11 +146,31 @@ pro mplayer, filename, $
 
 COMPILE_OPT IDL2
 
+umsg = 'USAGE: mplayer, filename, [/gray], [dimensions = dimensions], [/order]'
+
+if n_params() ne 1 then begin
+   filter = [['*.VOB', '*.mpg;mpeg', '*.avi', '*.m4v;*.mov', '*.*'], $
+             ['VOB', 'MPEG', 'AVI', 'Quicktime', 'All files']]
+   filename = dialog_pickfile(title = 'Select video file to play', $
+                              /read, /must_exist, filter = filter)
+endif
+
+if ~file_test(filename, /read) then begin
+   message, umsg, /inf
+   message, 'could not read '+filename, /inf
+   return
+endif
+
 ; Create player object
 gray = keyword_set(grayscale) or keyword_set(greyscale)
 order = (arg_present(order)) ? keyword_set(order) : 1 ; flip by default
+
 player = DGGgrMPlayer(filename, greyscale=gray, dimensions=dimensions, order=order)
-if ~isa(player, 'DGGgrMPlayer') then return
+if ~isa(player, 'DGGgrMPlayer') then begin
+   message, umsg, /inf
+   message, 'could not open '+filename, /inf
+   return
+endif
 
 ; Define widget hierarchy
 base = widget_base(/column, title = 'MPlayer', /tlb_size_events)
@@ -176,7 +197,7 @@ xmanager, 'mplayer', base, /no_block, cleanup = 'mplayer_cleanup'
 
 widget_control, wimage, get_value = win
 win.select
-im = image(player.next, margin = 0, /current)
+im = image(player.read(), margin = 0, /current)
 
 widget_control, base, tlb_get_size = basesize
 xpad = basesize[0] - 640
