@@ -47,6 +47,7 @@
 ; 07/05/2012 DGG Further consistency upgrades.  Fixed code for
 ;    parsing ORDER keyword.
 ; 07/24/2013 DGG Allow "gray" as well as "grey".
+; 07/26/2013 DGG compatibility with new DGGgrMPlayer syntax.
 ;
 ; Copyright (c) 2012-2013 David G. Grier
 ;-
@@ -70,7 +71,7 @@ case tag_names(event, /structure_name) of
          (*s).pause = 1
       endif else begin
          widget_control, event.top, timer = (*s).timer
-         (*s).player->readframe
+         (*s).player->read
          if ~(*s).player.eof then $
             (*s).im->putdata, (*s).player.data
       endelse
@@ -86,7 +87,7 @@ case tag_names(event, /structure_name) of
          'PAUSE': (*s).pause = 1
          'STEP': begin
             (*s).pause = 1
-            (*s).player->readframe
+            (*s).player->read
             if ~(*s).player.eof then $
                (*s).im->putdata, (*s).player.data
          end

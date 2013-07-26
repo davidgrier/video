@@ -45,6 +45,7 @@
 ; 10/22/2012 Bhaskar Jyoti Krishnatreya and DGG: Fix code for other formats.
 ; 02/02/2013 BJK fixed code for other formats
 ; 02/02/2013 DGG Fix order test.
+; 07/27/2013 DGG Update for new DGGgrMPlayer syntax.
 ;
 ; Copyright (c) 2012-2013 David G. Grier and Bhaskar Jyoti Krishnatreya
 ;-
@@ -112,9 +113,9 @@ while ~player.eof do begin
    ; Write next frame into working directory
    fn = string(lev1, lev2, lev3, format = fmt)
    if dogdf then $
-      write_gdf, player.next, dir+fn  $
+      write_gdf, player.read(), dir+fn  $
    else $
-      write_image, dir+fn, format, player.next
+      write_image, dir+fn, format, player.read()
 
    ; Create new directory if necessary
    if (++lev3 gt 99) then begin
