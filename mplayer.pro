@@ -10,16 +10,22 @@
 ;    Multimedia
 ;
 ; CALLING SEQUENCE:
-;    mplayer, movie
+;    mplayer, filename
+;    mplayer, player
 ;
 ; INPUTS:
-;    movie: String containing the name of a video file.
+;    If no argument is provided, a file selection dialog appears.
+;
+;    filename: String containing the name of a video file.
+;    player: object of type DGGgrMPlayer
 ;
 ; KEYWORD PARAMETERS:
 ;    dimensions: [w,h] scaled dimensions of video frame.
 ;        Default: intrinsic dimensions
 ;
 ; KEYWORD FLAGS:
+;    These options do not apply when a player object is provided.
+;
 ;    greyscale (or grayscale): If set, cast video to greyscale.
 ;        Default: RGB color
 ;
@@ -49,6 +55,7 @@
 ; 07/24/2013 DGG Allow "gray" as well as "grey".
 ; 07/26/2013 DGG compatibility with new DGGgrMPlayer syntax.
 ;    Handle file selection more gracefully.
+; 07/27/2013 DGG allow player as argument.
 ;
 ; Copyright (c) 2012-2013 David G. Grier
 ;-
@@ -155,22 +162,32 @@ if n_params() ne 1 then begin
                               /read, /must_exist, filter = filter)
 endif
 
-if ~file_test(filename, /read) then begin
-   message, umsg, /inf
-   message, 'could not read '+filename, /inf
-   return
-endif
+if isa(filename, 'DGGgrMPlayer') then $
+   player = filename $
+else begin
+   if ~isa(filename, string) then begin
+      message, umsg, /inf
+      message, 'FILENAME must be a string', /inf
+      return
+   endif
 
-; Create player object
-gray = keyword_set(grayscale) or keyword_set(greyscale)
-order = (arg_present(order)) ? keyword_set(order) : 1 ; flip by default
+   if ~file_test(filename, /read) then begin
+      message, umsg, /inf
+      message, 'could not read '+filename, /inf
+      return
+   endif
 
-player = DGGgrMPlayer(filename, greyscale=gray, dimensions=dimensions, order=order)
-if ~isa(player, 'DGGgrMPlayer') then begin
-   message, umsg, /inf
-   message, 'could not open '+filename, /inf
-   return
-endif
+   ;; Create player object
+   gray = keyword_set(grayscale) or keyword_set(greyscale)
+   order = (arg_present(order)) ? keyword_set(order) : 1 ; flip by default
+   
+   player = DGGgrMPlayer(filename, greyscale=gray, dimensions=dimensions, order=order)
+   if ~isa(player, 'DGGgrMPlayer') then begin
+      message, umsg, /inf
+      message, 'could not open '+filename, /inf
+      return
+   endif
+endelse
 
 ; Define widget hierarchy
 base = widget_base(/column, title = 'MPlayer', /tlb_size_events)
