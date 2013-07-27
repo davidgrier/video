@@ -165,7 +165,7 @@ endif
 if isa(filename, 'DGGgrMPlayer') then $
    player = filename $
 else begin
-   if ~isa(filename, string) then begin
+   if ~isa(filename, 'string') then begin
       message, umsg, /inf
       message, 'FILENAME must be a string', /inf
       return
@@ -199,7 +199,8 @@ bar = widget_base(base, /row, /grid_layout)
 info = widget_base(bar, /column, /align_left)
 buttons = widget_base(bar, /row)
 
-wframe = widget_label(info, value = 'frame: 0', /dynamic_resize)
+wframe = widget_label(info, value = 'frame: 0', /dynamic_resize, $
+                      /sunken_frame)
 
 void   = widget_button(buttons, value = 'Play',   uvalue = 'PLAY')
 void   = widget_button(buttons, value = 'Pause',  uvalue = 'PAUSE')
