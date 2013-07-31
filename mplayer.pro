@@ -56,6 +56,7 @@
 ; 07/26/2013 DGG compatibility with new DGGgrMPlayer syntax.
 ;    Handle file selection more gracefully.
 ; 07/27/2013 DGG allow player as argument.
+; 07/31/2013 DGG do not delete provided player object.
 ;
 ; Copyright (c) 2012-2013 David G. Grier
 ;-
@@ -135,7 +136,8 @@ pro mplayer_cleanup, w
 COMPILE_OPT IDL2, HIDDEN
 
 widget_control, w, get_uvalue = s
-obj_destroy, (*s).player
+if ~(*s).noclobber then $
+   obj_destroy, (*s).player
 ptr_free, s
 end
 
@@ -162,9 +164,11 @@ if n_params() ne 1 then begin
                               /read, /must_exist, filter = filter)
 endif
 
-if isa(filename, 'DGGgrMPlayer') then $
-   player = filename $
-else begin
+if isa(filename, 'DGGgrMPlayer') then begin
+   player = filename
+   noclobber = 1                ; do not delete provided player
+endif else begin
+   noclobber = 0
    if ~isa(filename, 'string') then begin
       message, umsg, /inf
       message, 'FILENAME must be a string', /inf
@@ -224,13 +228,14 @@ pad = [xpad, ypad]
 
 ; state variable
 timer = 1./player.fps
-s = {player: player, $
-     im:     im,     $
-     wimage: wimage, $
-     wframe: wframe, $
-     pad:    pad,    $
-     pause:  0,      $
-     timer:  timer}
+s = {player:    player,    $
+     noclobber: noclobber, $ 
+     im:        im,        $
+     wimage:    wimage,    $
+     wframe:    wframe,    $
+     pad:       pad,       $
+     pause:     0,         $
+     timer:     timer}
 ps = ptr_new(s, /no_copy)
 
 widget_control, base, set_uvalue = ps, /no_copy
