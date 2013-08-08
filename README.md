@@ -42,6 +42,8 @@ to rip a video file into individual frames that are stored on disk.
 
 * **mp_normalize**: Remove overall intensity variations from a video file.
 
+* **mp_median**: Computes running median of a video file.
+
 The following utility routines are useful for working with
 individual images taken from video streams.
 
