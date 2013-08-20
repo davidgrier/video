@@ -40,6 +40,7 @@
 ; 01/15/2013 Written by David G. Grier, New York University
 ; 02/03/2013 DGG Minimum value is 1, rather than 0.
 ; 08/08/2013 DGG Recast as general-purpose video routine.
+; 08/20/2013 DGG Update object syntax
 ;
 ; Copyright (c) 2013 David G. Grier
 ;-
@@ -74,7 +75,7 @@ endif
 if a.framenumber gt n0 then $
    a.rewind
 while a.framenumber lt n0 do begin
-   a.readframe
+   a.read
    if a.eof then begin
       message, umsg, /inf
       message, 'n0 exceeds the number of frames in the movie', /inf
@@ -93,7 +94,7 @@ ndx = lindgen(npts)
 nframes = 0.
 if isa(n1, /number, /scalar) then begin
    while a.framenumber lt n1 and ~a.eof do begin
-      b[ndx, a.next]++
+      b[ndx, a.read()]++
       nframes++
    endwhile
    if a.framenumber lt n1 then begin
@@ -103,7 +104,7 @@ if isa(n1, /number, /scalar) then begin
    endif
 endif else begin
    while ~a.eof do begin
-      b[ndx, a.next]++
+      b[ndx, a.read()]++
       nframes++
    endwhile
 endelse 
