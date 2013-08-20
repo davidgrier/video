@@ -34,6 +34,8 @@ and does not require any additions or modifications to IDL itself.
 * **DGGgrMPlayer__define**: An IDL object that opens a video file,
 decodes it, and extracts frames.
 
+* **VOB__define**: A simplified object interface for VOB files.
+
 * **mplayer**: A simple resizable GUI movie player that demonstrates
 the capabilities of the DGGgrMPlayer object.
 
