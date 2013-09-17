@@ -179,7 +179,7 @@ if isa(roi, /number) and (n_elements(roi) eq 4) then begin
    endif
    self.roi = long(roi)
 endif else $
-   self.roi = [5, dim[0]-12, 0, dim[1]-1]
+   self.roi = [4, dim[0]-13, 0, dim[1]-1]
 
 return, 1
 end
