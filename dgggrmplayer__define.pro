@@ -72,6 +72,14 @@
 ;	Read the next video frame into the DATA property
 ;       and return the data.
 ;
+;    Seek, framenumber
+;       Select the specified framenumber, if possible.
+;       framenumber: integer specifying the frame to cue.
+;
+;    Seek(framenumber)
+;       Select the specified framenumber.
+;       Return TRUE if seek succeeds and FALSE otherwise.
+;
 ;    Rewind
 ;        Start reading current video file from the beginning.
 ;            Example:
@@ -137,6 +145,7 @@
 ; 02/19/2013 DGG added Get method for ASPECT and BITRATE properties.
 ; 07/25/2013 DGG Renamed ReadFrame to Read.  Added Read() method.
 ; 07/27/2013 DGG updated HELP and PRINT.
+; 09/30/2013 DGG Implemented SEEK methods.
 ;
 ; Copyright (c) 2012-2013 David G. Grier
 ;-
@@ -176,6 +185,42 @@ COMPILE_OPT IDL2, HIDDEN
 
 self->read
 return, *self.data
+end
+
+;;;;;
+;
+; DGGgrMPlayer::Seek()
+;
+; Seek a specified frame number
+; Return TRUE for success and FALSE for failure
+;
+function DGGgrMPlayer::Seek, goal
+
+COMPILE_OPT IDL2, HIDDEN
+
+self.seek, goal
+return, self.framenumber eq goal
+
+end
+
+;;;;;
+;
+; DGGgrMPlayer::Seek
+;
+; Seek a specified frame number
+;
+pro DGGgrMPlayer::Seek, goal
+
+COMPILE_OPT IDL2, HIDDEN
+
+if ~isa(goal, /number, /scalar) then return
+
+if self.framenumber gt goal then $
+   self.rewind
+
+while (self.framenumber lt goal) and ~self.eof do $
+   self.read
+
 end
 
 ;;;;;
