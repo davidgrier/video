@@ -39,6 +39,7 @@
 ; Properties identifying required external programs:
 ;    mplayer     [IG ] string containing name of mplayer executable
 ;    mencoder    [IG ] string containing name of mencoder executable
+;    command     [ G ] string containing the mencoder command line.
 ;    NOTE: By default, these programs are assumed to be in the path,
 ;    and usually do not need to be specified.
 ;
@@ -105,9 +106,7 @@
 ; NOTES:
 ;    1. Can this be done with mplayer alone?  If so, then we don't
 ;       need mencoder.
-;    2. Implement seeking?  This might permit videos to be treated
-;       like arrays.
-;    3. Windows implementation?  This might require an alternative
+;    2. Windows implementation?  This might require an alternative
 ;       to named pipes, which apparently are handled differently
 ;       under Windows.
 ;
@@ -146,6 +145,7 @@
 ; 07/25/2013 DGG Renamed ReadFrame to Read.  Added Read() method.
 ; 07/27/2013 DGG updated HELP and PRINT.
 ; 09/30/2013 DGG Implemented SEEK methods.
+; 10/25/2013 DGG Suppress stderr output.  Added COMMAND property.
 ;
 ; Copyright (c) 2012-2013 David G. Grier
 ;-
@@ -257,7 +257,7 @@ flags = ' -really-quiet' + $     ; do not print startup messages
         ' -ao null' + $          ; do not translate audio
         ' -frames 0' + $         ; do not output any frames
         ' -identify '            ; report video format to stdout
-spawn, self.mplayer + flags + self.filename, unit = lun, exit_status = status
+spawn, self.mplayer + flags + self.filename + ' 2>/dev/null', unit = lun, exit_status = status
 
 a = ''
 while ~eof(lun) do begin
@@ -313,38 +313,43 @@ if ~file_test(fifo, /read, /write, /named_pipe) then $
 self.fifo = fifo
 
 ;;; Pipe output of mencoder through fifo:
-;; Command line options for mencoder
-; Basic mencoder settings ...
-options = ' -really-quiet' + $     ; suppress startup messages
-          ' -nosound' + $          ; discard audio track
-          ' -ovc raw -of rawvideo' ; translate to raw video
+self.command = self.mencoder
 
-; Video format ...
+;; Command line options for mencoder
+;; Basic mencoder settings ...
+self.command += ' -really-quiet' + $     ; suppress startup messages
+                ' -nosound' + $          ; discard audio track
+                ' -ovc raw -of rawvideo' ; translate to raw video
+
+;; Video format ...
 ;     NOTE: to list available raw video formats:
 ;     $ mencoder -ovc raw -vf format=fmt=help
-fmt = (self.greyscale) ? ' -vf format=y8,scale' : $ ; 8-bit grayscale [w, h]
-      ' -vf format=rgb24'                           ; 24-bit RGB [3, w, h]
+self.command += (self.greyscale) ? $
+                ' -vf format=y8,scale' : $ ; 8-bit grayscale [w, h]
+                ' -vf format=rgb24'        ; 24-bit RGB [3, w, h]
 ; optionally scale image dimensions ...
 if ~array_equal(self.dimensions, self.geometry) then $
-   fmt += string(self.dimensions, format = '(",scale=",I0,":",I0)')
+   self.command += string(self.dimensions, format = '(",scale=",I0,":",I0)')
 ; optionally flip frames vertically ...
 if self.order then $
-   fmt += ',flip'
-options += fmt
+   self.command += ',flip'
 
-; Output to fifo
-options += ' -o ' + self.fifo
+;; Output to fifo
+self.command += ' -o ' + self.fifo
 
-; Input from specified source
-options += ' ' + self.filename
+;; Input from specified source
+self.command += ' ' + self.filename
 ; ... including input from a video camera
-if self.video then $
-   options = ' tv:// -tv driver=v4l2 ' + options
+;if self.video then $
+;   options = ' tv:// -tv driver=v4l2 ' + options
+
+; Suppress error messages
+self.command += ' 2>/dev/null'
 
 ; Run in background
-options += ' &'
+self.command += ' &'
 
-spawn, self.mencoder + options, pid = pid
+spawn, self.command, pid = pid
 self.pid = pid + 1
 openr, lun, self.fifo, /get_lun, /delete
 self.lun = lun
@@ -445,6 +450,7 @@ pro DGGgrMPlayer::GetProperty, eof = eof,                 $
                                video = video,             $
                                mencoder = mencoder,       $
                                mplayer = mplayer,         $
+                               command = command,         $
                                pid = pid,                 $
                                fifo = fifo,               $
                                lun = lun,                 $
@@ -479,6 +485,7 @@ if arg_present(filename)    then filename = self.filename
 if arg_present(video)       then video = self.video
 if arg_present(mencoder)    then mencoder = self.mencoder
 if arg_present(mplayer)     then mplayer = self.mplayer
+if arg_present(command)     then command = self.command
 if arg_present(pid)         then pid = self.pid
 if arg_present(fifo)        then fifo = self.fifo
 if arg_present(lun)         then lun = self.lun
@@ -620,6 +627,7 @@ struct = {DGGgrMPlayer, $
           filename:    '',         $ ; name of video file
           mplayer:     'mplayer',  $ ; name of mplayer executable
           mencoder:    'mencoder', $ ; name of mencoder executable
+          command:     '',         $ ; command line used to create pipe
           pid:         0L,         $ ; process ID of running mplayer instance
           fifo:        '',         $ ; name of fifo for transferring frames
           lun:         0L,         $ ; logical unit number used to read fifo
