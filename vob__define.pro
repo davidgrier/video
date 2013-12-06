@@ -39,7 +39,12 @@
 ;    SetProperty
 ;
 ; MODIFICATION HISTORY:
+; 08/20/2013 Written by David G. Grier, New York University
+; 12/06/2013 DGG and Bhaskar Jyoti Krishnatreya Change default
+;    ROI from [4, dim[0]-13, 0, dim[1]-1] to 
+;    [8, dim[0]-9, 0, dim[1]-1] for better compatibility with CCD cameras.
 ;
+; Copyright (c) 2013 David G. Grier and Bhaskar Jyoti Krishnatreya
 ;-
 
 ;;;;;
@@ -179,7 +184,7 @@ if isa(roi, /number) and (n_elements(roi) eq 4) then begin
    endif
    self.roi = long(roi)
 endif else $
-   self.roi = [4, dim[0]-13, 0, dim[1]-1]
+   self.roi = [8, dim[0]-9, 0, dim[1]-1]
 
 return, 1
 end
