@@ -48,8 +48,9 @@
 ; 06/17/2012 DGG added EVEN keyword and usage message.
 ; 07/18/2012 DGG works for 3D images.
 ; 01/27/2013 DGG added optional FIELD input.  Reworked index math.
+; 04/23/2014 DGG allow null-valued FIELD: just return image.
 ;
-; Copyright (c) 2008-2013 David G. Grier
+; Copyright (c) 2008-2014 David G. Grier
 ;-
 function deinterlace, image, field,$
                       odd = odd, $
@@ -65,6 +66,8 @@ if n_params() lt 1 then begin
 endif
 
 if n_params() eq 2 then begin
+   if ~isa(field, /number, /scalar) then $
+      return, image
    if round(field) eq 0 then $
       return, image
 endif
