@@ -146,8 +146,9 @@
 ; 07/27/2013 DGG updated HELP and PRINT.
 ; 09/30/2013 DGG Implemented SEEK methods.
 ; 10/25/2013 DGG Suppress stderr output.  Added COMMAND property.
+; 06/28/2014 DGG Support for file names with spaces.
 ;
-; Copyright (c) 2012-2013 David G. Grier
+; Copyright (c) 2012-2014 David G. Grier
 ;-
 ;;;;;
 ;
@@ -257,7 +258,8 @@ flags = ' -really-quiet' + $     ; do not print startup messages
         ' -ao null' + $          ; do not translate audio
         ' -frames 0' + $         ; do not output any frames
         ' -identify '            ; report video format to stdout
-spawn, self.mplayer + flags + self.filename + ' 2>/dev/null', unit = lun, exit_status = status
+cmd = self.mplayer + flags + '"' + self.filename + '"' +' 2>/dev/null'
+spawn, cmd, unit = lun, count = count, exit_status = status
 
 a = ''
 while ~eof(lun) do begin
@@ -338,7 +340,7 @@ if self.order then $
 self.command += ' -o ' + self.fifo
 
 ;; Input from specified source
-self.command += ' ' + self.filename
+self.command += ' "' + self.filename + '"'
 ; ... including input from a video camera
 ;if self.video then $
 ;   options = ' tv:// -tv driver=v4l2 ' + options
