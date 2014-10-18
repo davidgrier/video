@@ -86,6 +86,9 @@
 ;            Example:
 ;            if player.eof then player->Rewind
 ;
+;    Close
+;        Calls the CleanUp method to close the video source.
+;
 ; PROCEDURE:
 ;    Uses mplayer -identify to obtain information about the video file.
 ;    Uses mencoder to write video data frame-by-frame to a fifo, also
@@ -147,6 +150,7 @@
 ; 09/30/2013 DGG Implemented SEEK methods.
 ; 10/25/2013 DGG Suppress stderr output.  Added COMMAND property.
 ; 06/28/2014 DGG Support for file names with spaces.
+; 10/18/2014 DGG Added Close method.
 ;
 ; Copyright (c) 2012-2014 David G. Grier
 ;-
@@ -388,6 +392,18 @@ if self.pid gt 0 then begin
 endif
 self.fifo = ''
 self.eof = 1
+end
+
+;;;;;
+;
+; DGGgrMPlayer::Close
+;
+pro DGGgrMPlayer::Close
+
+COMPILE_OPT IDL2, HIDDEN
+
+obj_destroy, self
+
 end
 
 ;;;;;
