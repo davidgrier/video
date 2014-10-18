@@ -49,44 +49,6 @@
 
 ;;;;;
 ;
-; vob::_overloadPrint
-;
-function vob::_overloadPrint
-
-COMPILE_OPT IDL2, HIDDEN
-
-nl = string(10b)
-str = string(self.filename,     format = '(%"filename   : \"%s\"\r")') + nl
-str += string(self.framenumber, format = '(%"framenumber: %d")') + nl
-str += string(self.geometry,    format = '(%"geometry   : [%d,%d]")') + nl
-str += string(self.dimensions,  format = '(%"dimensions : [%d,%d]")') + nl
-str += string(self.greyscale,   format = '(%"grayscale  : %d")') + nl
-str += string(self.order,       format = '(%"order      : %d")')
-return, str
-end
-
-;;;;;
-;
-; vob::_overloadHelp
-;
-function vob::_overloadHelp, varname
-
-COMPILE_OPT IDL2, HIDDEN
-
-nl = string(10b)
-id = obj_valid(self, /get_heap_id)
-sp = strjoin(replicate(' ', strlen(varname)+3))
-fmt = '(%"dimensions  : [' + ((self.greyscale) ? '' : '3, ') + '%d, %d]")'
-
-str = string(varname, self.filename, id, format = '(%"%s = VOB(\"%s\")\t<ObjHeapVar%d>")') + nl
-str += sp + string(self.dimensions,  format = fmt) + nl
-str += sp + string(self.framenumber, format = '(%"frame number: %d")')
-
-return, str
-end
-
-;;;;;
-;
 ; VOB::Rewind
 ;
 pro vob::rewind

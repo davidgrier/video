@@ -447,11 +447,14 @@ COMPILE_OPT IDL2, HIDDEN
 
 nl = string(10b)
 id = obj_valid(self, /get_heap_id)
-sp = strjoin(replicate(' ', strlen(varname)+3))
-fmt = '(%"dimensions  : [' + ((self.greyscale) ? '' : '3, ') + '%d, %d]")'
+sp = strjoin(replicate(' ', strlen(varname)+3)) ; space for visual formatting
 
-str = string(varname, self.filename, id, format = '(%"%s = DGGgrMPlayer(\"%s\")\t<ObjHeapVar%d>")') + nl
-str += sp + string(self.dimensions,  format = fmt) + nl
+str = string(varname, obj_class(self), self.filename, id, $
+             format = '(%"%s = %s(\"%s\")\t<ObjHeapVar%d>")') + nl
+str += sp + $
+       string(self.dimensions,  $
+              format = '(%"dimensions  : [' + $
+              ((self.greyscale) ? '' : '3, ') + '%d, %d]")') + nl
 str += sp + string(self.framenumber, format = '(%"frame number: %d")')
 
 return, str
