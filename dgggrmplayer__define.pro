@@ -591,6 +591,11 @@ function DGGgrMPlayer::Init, filename,                $
                              
 COMPILE_OPT IDL2, HIDDEN
 
+if !version.os_family ne 'unix' then begin
+   message, 'only available for unix', /inf
+   return, 0
+endif
+
 ; check that underlying executables are available.
 if isa(mplayer, 'string') then $
    self.mplayer = mplayer $
