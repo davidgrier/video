@@ -6,7 +6,7 @@
 ;    Object class for recording and retrieving video data and
 ;    associated metadata in an HDF5 archive.  By default, images
 ;    are stored in an HDF5 group called "images".  Each image
-;    is labeled with his floating-point timestamp, and optionally
+;    is labeled with its floating-point timestamp, and optionally
 ;    may have metadata associated with it.  Additional groups
 ;    of images may be added, and each group may be annotated
 ;    with its own metadata.
@@ -87,6 +87,9 @@
 ;            METADATA: Structure containing metadata for
 ;                this image.
 ;
+;    h5video::Transcode
+;        Save image data in standard video format.
+;
 ; OVERLOADED OPERATORS:
 ;    INDEXING:
 ;        a = h5video(...)
@@ -96,12 +99,12 @@
 ;        foreach image, a do tvscl, image
 ;
 ; NOTES:
-; * Transcode method to create movie of active group
 ; * Implement increment and decrement operators: change currently
 ;    active index
 ;
 ; MODIFICATION HISTORY:
 ; 02/11/2015 Written by David G. Grier, New York University
+; 02/12/2015 DGG Implemented transcode method.
 ;
 ; Copyright (c) 2015 David G. Grier
 ;-
@@ -109,8 +112,41 @@
 ;
 ; h5video::Transcode
 ;
-; NOTE: Transcode images to standard video format
+; Transcode images from active group to standard video format
 ;
+pro h5video::Transcode
+
+  COMPILE_OPT IDL2, HIDDEN
+
+  fn = file_basename(self.filename, '.h5')
+  if (self.group ne 'images') then $
+     fn += '_' + self.group
+  fn += '.mp4'
+  video = IDLffVideoWrite(fn)
+  
+  image = self.read()
+  sz = image.dim
+
+  case image.ndim of
+     2: begin
+        image = bytarr(3, sz[0], sz[1], /nozero)
+        sid = video.addvideostream(sz[0], sz[1], 30)
+        foreach im, self do begin
+           image[0, *, *] = im
+           image[1, *, *] = im
+           image[2, *, *] = im
+           time = video.put(sid, image)
+        endforeach
+        end
+     3: begin
+        sid = video.addstream(sz[1], sz[2], 30)
+        foreach image, self do $
+           time = video.put(sid, image)
+        end
+     else: message, 'image data must be two- or three-dimensional', /inf
+  endcase
+  obj_destroy, video
+end
 
 ;;;;;
 ;
