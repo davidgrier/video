@@ -111,7 +111,8 @@
 ;
 ; MODIFICATION HISTORY:
 ; 02/11/2015 Written by David G. Grier, New York University
-; 02/12/2015 DGG Implemented transcode method.
+; 02/12/2015 DGG Implemented transcode method.  Enhanced timestamps.
+;     File and each group is stamped with date of creation.
 ;
 ; Copyright (c) 2015 David G. Grier
 ;-
@@ -257,6 +258,36 @@ end
 
 ;;;;;
 ;
+; h5video::timestamp
+;
+pro h5video::timestamp, loc_id, str
+
+  COMPILE_OPT IDL2, HIDDEN
+
+  ts = 'Created on ' + systime(0)
+  
+  tid = h5t_idl_create(ts)
+  sid = h5s_create_simple(1)
+  aid = h5a_create(loc_id, 'timestamp', tid, sid)
+  h5a_write, aid, ts
+  h5a_close, aid
+  h5s_close, sid
+  h5t_close, tid
+end
+
+;;;;;
+;
+; h5video::timestamp()
+;
+function h5video::timestamp
+
+  COMPILE_OPT IDL2, HIDDEN
+
+  return, string(systime(/seconds), format = '(F017.6)')  
+end
+
+;;;;;
+;
 ; h5video::Read()
 ;
 ; SYNTAX
@@ -378,7 +409,7 @@ pro h5video::Write, image, name, $
 
 ;; FIXME check dimensions and type
   
-  name = isa(name, "string") ? name : dgtimestamp()
+  name = isa(name, 'string') ? name : self.timestamp()
   did = h5d_create(self.gid, name, self.tid, self.sid, gzip = 7)
   h5d_write, did, image
   if isa(metadata) then begin
@@ -449,16 +480,18 @@ pro h5video::SetProperty, group = group, $
   endif
   
   ;; Open an existing group or create a new one
-  if isa(group, "string") && (group ne self.group) then begin
+  if isa(group, 'string') && (group ne self.group) then begin
      gid = self.h5g_open(self.fid, group) ; try existing group
-     if (gid eq 0L) && ~self.readonly then $
+     if (gid eq 0L) && ~self.readonly then begin
         gid = h5g_create(self.fid, group) ; ...or new group
-     if (gid gt 0L) then begin            ; switch if successful
+        self.timestamp, gid
+     endif
+     if (gid gt 0L) then begin  ; switch if successful
         h5g_close, self.gid
         self.gid = gid
         self.group = group
+        self.ndx = 0L           ; start with first image of new group
      endif
-     self.ndx = 0L              ; start with first image of new group
   endif
 
   if isa(index, /number, /scalar) then begin
@@ -586,6 +619,7 @@ function h5video::Init, filename, $
         self.readonly = !FALSE
         file_delete, self.filename
         self.fid = h5f_create(self.filename) ; ... so overwrite it
+        self.timestamp, self.fid
      endif else if (h5f_is_hdf5(self.filename)) then begin
         self.readonly = ~keyword_set(write)
         self.fid = h5f_open(self.filename, $ ; ... or open it, if it's HDF5
@@ -596,14 +630,16 @@ function h5video::Init, filename, $
      endelse
   endif else begin                        ; file does not exist
      self.fid = h5f_create(self.filename) ; ... so create new HDF5 file
+     self.timestamp, self.fid
   endelse
 
   self.group = 'images'         ; every video has images
   gid = self.h5g_open(self.fid, self.group)
-  if ~gid then begin
+  if (gid eq 0L) then begin
      gid = h5g_create(self.fid, self.group)
+     if (gid gt 0L) then self.timestamp, gid
   endif
-  if ~gid then begin
+  if (gid eq 0L) then begin
      h5f_close, self.fid
      return, 0B
   endif
