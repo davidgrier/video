@@ -43,8 +43,10 @@
 ;        create a new archive.
 ;
 ; METHODS:
-;    h5video::Close
-;        Close the archive and destroy the object
+;    h5video::GetProperty
+;    h5video::SetProperty
+;        GetProperty and SetProperty may be performed for
+;        individual properties using IDL_Object dot notation.
 ;
 ;    h5video::Read([name|index])
 ;        Returns one image from the current group.
@@ -86,17 +88,22 @@
 ;        KEYWORD ARGUMENT:
 ;            METADATA: Structure containing metadata for
 ;                this image.
+;        NOTE: Raises an error if the archive is opened
+;            read-only.
 ;
 ;    h5video::Transcode
 ;        Save image data in standard video format.
 ;
+;    h5video::Close
+;        Close the archive and destroy the object
+;
 ; OVERLOADED OPERATORS:
-;    INDEXING:
-;        a = h5video(...)
-;        b = a[2:4] ; returns images 2, 3 and 4 from current group
+;    video = h5video(...)
+;    ARRAY INDEXING:
+;        images = video[2:4] ; returns images 2, 3 and 4 from current group
 ;
 ;    FOREACH:
-;        foreach image, a do tvscl, image
+;        foreach image, video do tvscl, image
 ;
 ; NOTES:
 ; * Implement increment and decrement operators: change currently
