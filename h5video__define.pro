@@ -8,8 +8,8 @@
 ;    are stored in an HDF5 group called "images".  Each image
 ;    is labeled with its floating-point timestamp, and optionally
 ;    may have metadata associated with it.  Additional groups
-;    of images may be added, and each group may be annotated
-;    with its own metadata.
+;    of images may be added.  Each group is annotated with
+;    its timestamp and, optionally, with additional metadata.
 ;
 ; CATEGORY:
 ;    Image processing, video microscopy
@@ -78,7 +78,7 @@
 ;        If no argument is given, return name of currently
 ;        active image in currently active group.
 ;
-;    h5video::Write, image, name
+;    h5video::Write, image[, name]
 ;        Write one image to currently active group
 ;        ARGUMENT:
 ;            IMAGE: image data to store into active group.
