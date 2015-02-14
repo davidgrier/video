@@ -113,6 +113,8 @@
 ; 02/11/2015 Written by David G. Grier, New York University
 ; 02/12/2015 DGG Implemented transcode method.  Enhanced timestamps.
 ;     File and each group is stamped with date of creation.
+; 02/14/2015 DGG Initialization metadata is written to the file.
+;     The METADATA property refers to the active group.
 ;
 ; Copyright (c) 2015 David G. Grier
 ;-
@@ -519,6 +521,7 @@ pro h5video::GetProperty, filename = filename, $
                           group = group, $
                           index = index, $
                           metadata = metadata, $
+                          file_metadata = file_metadata, $
                           nimages = nimages, $
                           names = names, $
                           images = images, $ ;; dump all images?
@@ -542,6 +545,15 @@ pro h5video::GetProperty, filename = filename, $
         h5a_close, aid
      endif else $
         metadata = !NULL
+  endif
+
+  if arg_present(file_metadata) then begin
+     aid = self.h5a_open_name(self.fid, 'metadata')
+     if (aid gt 0L) then begin
+        file_metadata = h5a_read(aid)
+        h5a_close, aid
+     endif else $
+        file_metadata = !NULL
   endif
   
   if arg_present(nimages) then $
@@ -648,8 +660,15 @@ function h5video::Init, filename, $
   if isa(image, /number, /array) then $
      self.write, image
 
-  if isa(metadata) then $
-     self.setproperty, metadata = metadata
+  if isa(metadata) && ~self.readonly then begin
+     tid = h5t_idl_create(metadata)
+     sid = h5s_create_simple(1)
+     aid = h5a_create(self.fid, 'metadata', tid, sid)
+     h5a_write, aid, metadata
+     h5a_close, aid
+     h5s_close, sid
+     h5t_close, tid
+  endif
 
   return, 1B
 end
