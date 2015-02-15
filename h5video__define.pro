@@ -406,7 +406,8 @@ pro h5video::Write, image, name, $
   
   if ~self.tid then begin
      self.tid = h5t_idl_create(image)        ; data type
-     self.sid = h5s_create_simple(image.dim) ; data space
+;     self.sid = h5s_create_simple(image.dim) ; data space ; IDL 8.4
+     self.sid = h5s_create_simple(size(image, /dimensions)) ; data space
   endif
 
 ;; FIXME check dimensions and type
@@ -628,7 +629,7 @@ function h5video::Init, filename, $
   self.filename = isa(filename, 'string') ? filename : 'h5video.h5'
   if file_test(self.filename) then begin ; file exists
      if keyword_set(overwrite) then begin
-        self.readonly = !FALSE
+        self.readonly = 0L
         file_delete, self.filename
         self.fid = h5f_create(self.filename) ; ... so overwrite it
         self.timestamp, self.fid
@@ -684,12 +685,12 @@ pro h5video__define
   struct = {h5video, $
             inherits IDL_Object, $
             filename: '', $
-            group: '', $           ; name of active group
-            fid: 0L, $             ; file id
-            tid: 0L, $             ; data type id
-            sid: 0L, $             ; dataspace id
-            gid: 0L, $             ; group id,
-            ndx: 0L, $             ; index of current image
-            readonly: boolean(0) $ ; read-only flag
+            group: '', $        ; name of active group
+            fid: 0L, $          ; file id
+            tid: 0L, $          ; data type id
+            sid: 0L, $          ; dataspace id
+            gid: 0L, $          ; group id,
+            ndx: 0L, $          ; index of current image
+            readonly:0L $       ; read-only flag
            }
 end
