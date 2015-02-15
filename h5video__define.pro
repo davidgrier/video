@@ -316,7 +316,7 @@ function h5video::Read, id
 
   if ~isa(id) then begin        ; read next frame in file (up to end)
      self.ndx = (self.ndx + 1UL) < (h5g_get_num_objs(self.gid) - 1UL)
-     name = hg5_get_obj_name_by_idx(self.gid, self.ndx)
+     name = h5g_get_obj_name_by_idx(self.gid, self.ndx)
   endif else if isa(id, /number, /scalar) then begin
      n = self.checkindex(id)
      if (n ge 0) then begin
