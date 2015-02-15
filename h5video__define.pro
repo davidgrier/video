@@ -314,16 +314,20 @@ function h5video::Read, id
 
   on_error, 2
 
-  if ~isa(id) then id = self.ndx
-  if isa(id, /number, /scalar) then begin
+  if ~isa(id) then begin        ; read next frame in file (up to end)
+     self.ndx = (self.ndx + 1UL) < (h5g_get_num_objs(self.gid) - 1UL)
+     name = hg5_get_obj_name_by_idx(self.gid, self.ndx)
+  endif else if isa(id, /number, /scalar) then begin
      n = self.checkindex(id)
      if (n ge 0) then begin
         name = h5g_get_obj_name_by_idx(self.gid, n)
         self.ndx = n
      endif else $
-        message, 'USAGE: h5video::Read(ndx)'
+        message, 'USAGE: h5video::Read([image_name|image_number])'
   endif else if isa(id, "string") then $
-     name = id
+     name = id $
+  else $
+     message, 'USAGE: h5video::Read([image_name|image_number])'
   
   did = h5d_open(self.gid, name)
   image = h5d_read(did)
