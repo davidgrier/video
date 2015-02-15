@@ -21,16 +21,29 @@
 ;    IDL_Object
 ;
 ; PROPERTIES:
-;    FILENAME [IG ] Name of the HDF5 file.  Default: h5video.h5
-;    GROUP    [ GS] Name of currently active group.  Default: images
-;    INDEX    [ GS] Number of currently active image within currently
-;        active group.  Reset to zero when GROUP changes.
-;    METADATA [IGS] Structure containing metadata for the current
+;        I: Can be set at initialization
+;        G: Can be retrieved with GetProperty
+;        S: Can be changed with SetProperty
+;    FILENAME:
+;        [IG ] Name of the HDF5 file.  Default: h5video.h5
+;    GROUP:
+;        [ GS] Name of currently active group.  Default: images
+;    METADATA:
+;        [IGS] Structure containing metadata for the current
 ;        group.  Default: !NULL
-;    NIMAGES  [ G ] Number of images in the active group.
-;    NAMES    [ G ] Array of strings containing the names of the
+;    FILE_METADATA:
+;        [IGS] Structure containing metadata for the file.
+;        Default: !NULL
+;    INDEX:
+;        [ GS] Number of currently active image within currently
+;        active group.  Reset to zero when GROUP changes.
+;    NIMAGES:
+;        [ G ] Number of images in the active group.
+;    NAMES:
+;        [ G ] Array of strings containing the names of the
 ;        images in the currently active group.
-;    READONLY [IG ] Flag.  If set, file has been opened read-only.
+;    READONLY:
+;        [IG ] Flag.  If set, file has been opened read-only.
 ;        No new data can be added to it.
 ;
 ; INITIALIZATION KEYWORD FLAGS:
@@ -472,7 +485,8 @@ end
 ;
 pro h5video::SetProperty, group = group, $
                           index = index, $
-                          metadata = metadata
+                          metadata = metadata, $
+                          file_metadata = file_metadata
 
   COMPILE_OPT IDL2, HIDDEN
 
@@ -508,6 +522,16 @@ pro h5video::SetProperty, group = group, $
      sid = h5s_create_simple(1)
      aid = h5a_create(self.gid, 'metadata', tid, sid)
      h5a_write, aid, metadata
+     h5a_close, aid
+     h5s_close, sid
+     h5t_close, tid
+  endif
+
+  if isa(file_metadata) && ~self.readonly then begin
+     tid = h5t_idl_create(file_metadata)
+     sid = h5s_create_simple(1)
+     aid = h5a_create(self.fid, 'metadata', tid, sid)
+     h5a_write, aid, file_metadata
      h5a_close, aid
      h5s_close, sid
      h5t_close, tid
