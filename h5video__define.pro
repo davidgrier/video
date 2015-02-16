@@ -35,8 +35,11 @@
 ;        [IGS] Structure containing metadata for the file.
 ;        Default: !NULL
 ;    INDEX:
-;        [ GS] Number of currently active image within currently
+;        [IGS] Number of currently active image within currently
 ;        active group.  Reset to zero when GROUP changes.
+;    STEPSIZE:
+;        [IGS] Number of images by which INDEX advances between
+;        calls to Read().  Default: 1
 ;    NIMAGES:
 ;        [ G ] Number of images in the active group.
 ;    NAMES:
@@ -315,8 +318,8 @@ function h5video::Read, id
   on_error, 2
 
   if ~isa(id) then begin        ; read next frame in file (up to end)
-     self.ndx = (self.ndx + 1UL) < (h5g_get_num_objs(self.gid) - 1UL)
      name = h5g_get_obj_name_by_idx(self.gid, self.ndx)
+     self.ndx = (self.ndx + self.step) < (h5g_get_num_objs(self.gid) - 1UL)
   endif else if isa(id, /number, /scalar) then begin
      n = self.checkindex(id)
      if (n ge 0) then begin
@@ -489,6 +492,7 @@ end
 ;
 pro h5video::SetProperty, group = group, $
                           index = index, $
+                          stepsize = stepsize, $
                           metadata = metadata, $
                           file_metadata = file_metadata
 
@@ -521,6 +525,9 @@ pro h5video::SetProperty, group = group, $
         self.ndx = ndx
   endif
 
+  if isa(stepsize, /number, /scalar) then $
+     self.step = long(stepsize) > 1L
+
   if isa(metadata) && ~self.readonly then begin
      tid = h5t_idl_create(metadata)
      sid = h5s_create_simple(1)
@@ -549,6 +556,7 @@ end
 pro h5video::GetProperty, filename = filename, $
                           group = group, $
                           index = index, $
+                          stepsize = stepsize, $
                           metadata = metadata, $
                           file_metadata = file_metadata, $
                           nimages = nimages, $
@@ -566,6 +574,9 @@ pro h5video::GetProperty, filename = filename, $
 
   if arg_present(index) then $
      index = self.ndx
+
+  if arg_present(stepsize) then $
+     stepsize = self.step
 
   if arg_present(metadata) then begin
      aid = self.h5a_open_name(self.gid, 'metadata')
@@ -641,7 +652,9 @@ function h5video::Init, filename, $
                         image = image, $
                         metadata = metadata, $
                         overwrite = overwrite, $
-                        write = write
+                        write = write, $
+                        index = index, $
+                        step = step
 
   COMPILE_OPT IDL2, HIDDEN
 
@@ -699,6 +712,10 @@ function h5video::Init, filename, $
      h5t_close, tid
   endif
 
+  self.index = isa(index, /number, /scalar) ? long(index) > 0L : 0L
+  
+  self.step = isa(stepsize, /number, /scalar) ? long(stepsize) > 1L : 1L
+
   return, 1B
 end
 
@@ -719,6 +736,7 @@ pro h5video__define
             sid: 0L, $          ; dataspace id
             gid: 0L, $          ; group id,
             ndx: 0L, $          ; index of current image
+            step: 0L, $         ; number of frames to advance per step
             readonly:0L $       ; read-only flag
            }
 end
