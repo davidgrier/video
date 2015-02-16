@@ -10,6 +10,7 @@
 ;    may have metadata associated with it.  Additional groups
 ;    of images may be added.  Each group is annotated with
 ;    its timestamp and, optionally, with additional metadata.
+;    The file itself may have metadata associated with it.
 ;
 ; CATEGORY:
 ;    Image processing, video microscopy
@@ -35,10 +36,10 @@
 ;        [IGS] Structure containing metadata for the file.
 ;        Default: !NULL
 ;    INDEX:
-;        [IGS] Number of currently active image within currently
-;        active group.  Reset to zero when GROUP changes.
+;        [IGS] Index of the currently active image within the
+;        currently active group.  Reset to zero when GROUP changes.
 ;    STEPSIZE:
-;        [IGS] Number of images by which INDEX advances between
+;        [IGS] Number by which INDEX advances between
 ;        calls to Read().  Default: 1
 ;    NIMAGES:
 ;        [ G ] Number of images in the active group.
@@ -50,11 +51,12 @@
 ;        No new data can be added to it.
 ;
 ; INITIALIZATION KEYWORD FLAGS:
+;    By default, a previously existing file is opened
+;    read-only, and a new file is opened for writing.
+
 ;    WRITE: If set, open a pre-existing file for writing.
-;        Default is to open a new file for writing,
-;        and to reopen a previously created file read-only.
-;        This flag overrules that behavior and allows new
-;        data to be appended to an archive.
+;        Data may be appended to existing groups, and
+;        new groups and metadata may be written to the file.
 ;    OVERWRITE: If set, erase any file with FILENAME and
 ;        create a new archive.
 ;
@@ -654,7 +656,7 @@ function h5video::Init, filename, $
                         overwrite = overwrite, $
                         write = write, $
                         index = index, $
-                        step = step
+                        stepsize = stepsize
 
   COMPILE_OPT IDL2, HIDDEN
 
@@ -712,7 +714,7 @@ function h5video::Init, filename, $
      h5t_close, tid
   endif
 
-  self.index = isa(index, /number, /scalar) ? long(index) > 0L : 0L
+  self.ndx = isa(index, /number, /scalar) ? long(index) > 0L : 0L
   
   self.step = isa(stepsize, /number, /scalar) ? long(stepsize) > 1L : 1L
 
