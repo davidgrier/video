@@ -25,6 +25,8 @@
 ;        I: Can be set at initialization
 ;        G: Can be retrieved with GetProperty
 ;        S: Can be changed with SetProperty
+;    DATA:
+;        [ G ] Image data for the currently active image
 ;    FILENAME:
 ;        [IG ] Name of the HDF5 file.  Default: h5video.h5
 ;    GROUP:
@@ -133,6 +135,7 @@
 ;     File and each group is stamped with date of creation.
 ; 02/14/2015 DGG Initialization metadata is written to the file.
 ;     The METADATA property refers to the active group.
+; 02/16/2015 DGG Added DATA keyword for compatibility with camera objects.
 ;
 ; Copyright (c) 2015 David G. Grier
 ;-
@@ -555,7 +558,8 @@ end
 ;
 ; h5video::GetProperty
 ;
-pro h5video::GetProperty, filename = filename, $
+pro h5video::GetProperty, data = data, $
+                          filename = filename, $
                           group = group, $
                           index = index, $
                           stepsize = stepsize, $
@@ -568,6 +572,9 @@ pro h5video::GetProperty, filename = filename, $
 
   COMPILE_OPT IDL2, HIDDEN
 
+  if arg_present(data) then $
+     data = self.read(self.index)
+  
   if arg_present(filename) then $
      filename = self.filename
   
