@@ -227,9 +227,9 @@ function h5video::_overloadBracketsRightSide, isrange, $
         n1 += nmax
      if (n0 gt n1) &&  (dn gt 0) then $
         message, 'Illegal subscript range'
-     ndx = [n0:n1:dn]
+     index = [n0:n1:dn]
      res = list()
-     foreach n, ndx do $
+     foreach n, index do $
         res.add, self.read(n)
      return, res.toarray()
   endelse
@@ -258,12 +258,12 @@ end
 ; Private method to check whether a provided index is
 ; in the valid range for the active group.
 ;
-function h5video::CheckIndex, ndx
+function h5video::CheckIndex, index
 
   COMPILE_OPT IDL2, HIDDEN
 
   nimages = h5g_get_num_objs(self.gid)
-  n = long(ndx)
+  n = long(index)
   if (n lt -nimages) || (n ge nimages) then begin
      message, 'Attempt to subscript ' + $
               self.group + $
@@ -320,13 +320,13 @@ function h5video::Read, id
   on_error, 2
 
   if ~isa(id) then begin        ; read next frame in file (up to end)
-     name = h5g_get_obj_name_by_idx(self.gid, self.ndx)
-     self.ndx = (self.ndx + self.step) < (h5g_get_num_objs(self.gid) - 1UL)
+     name = h5g_get_obj_name_by_idx(self.gid, self.index)
+     self.index = (self.index + self.step) < (h5g_get_num_objs(self.gid) - 1UL)
   endif else if isa(id, /number, /scalar) then begin
      n = self.checkindex(id)
      if (n ge 0) then begin
         name = h5g_get_obj_name_by_idx(self.gid, n)
-        self.ndx = n
+        self.index = n
      endif else $
         message, 'USAGE: h5video::Read([image_name|image_number])'
   endif else if isa(id, "string") then $
@@ -345,16 +345,16 @@ end
 ;
 ; h5video::Metadata()
 ;
-function h5video::Metadata, ndx
+function h5video::Metadata, index
 
   COMPILE_OPT IDL2, HIDDEN
 
   on_error, 2
 
-  if ~isa(ndx) then $
-     ndx = self.ndx
-  if isa(ndx, /number, /scalar) then begin
-     n = self.checkindex(ndx)
+  if ~isa(index) then $
+     index = self.index
+  if isa(index, /number, /scalar) then begin
+     n = self.checkindex(index)
      if (n ge 0L) then begin
         did = h5d_open(self.gid, h5g_get_obj_name_by_idx(self.gid, n))
         aid = self.h5a_open_name(did, 'metadata')
@@ -373,23 +373,23 @@ end
 ;
 ; h5video::Time()
 ;
-function h5video::Time, ndx
+function h5video::Time, index
 
   COMPILE_OPT IDL2, HIDDEN
 
   on_error, 2
 
-  if ~isa(ndx) then $
-     ndx = self.ndx
-  if isa(ndx, /number, /scalar) then begin
-     n = self.checkindex(ndx)
+  if ~isa(index) then $
+     index = self.index
+  if isa(index, /number, /scalar) then begin
+     n = self.checkindex(index)
      if (n ge 0L) then begin
-        self.ndx = n
+        self.index = n
         return, double(h5g_get_obj_name_by_idx(self.gid, n))
      endif
   endif
 
-  message, 'USAGE: h5video::Time(ndx)'
+  message, 'USAGE: h5video::Time(index)'
   return, 0L
 end
 
@@ -517,14 +517,14 @@ pro h5video::SetProperty, group = group, $
         h5g_close, self.gid
         self.gid = gid
         self.group = group
-        self.ndx = 0L           ; start with first image of new group
+        self.index = 0L           ; start with first image of new group
      endif
   endif
 
   if isa(index, /number, /scalar) then begin
-     ndx = self.checkindex(index)
-     if (ndx ge 0L) then $
-        self.ndx = ndx
+     index = self.checkindex(index)
+     if (index ge 0L) then $
+        self.index = index
   endif
 
   if isa(stepsize, /number, /scalar) then $
@@ -575,7 +575,7 @@ pro h5video::GetProperty, filename = filename, $
      group = self.group
 
   if arg_present(index) then $
-     index = self.ndx
+     index = self.index
 
   if arg_present(stepsize) then $
      stepsize = self.step
@@ -714,7 +714,7 @@ function h5video::Init, filename, $
      h5t_close, tid
   endif
 
-  self.ndx = isa(index, /number, /scalar) ? long(index) > 0L : 0L
+  self.index = isa(index, /number, /scalar) ? long(index) > 0L : 0L
   
   self.step = isa(stepsize, /number, /scalar) ? long(stepsize) > 1L : 1L
 
@@ -737,7 +737,7 @@ pro h5video__define
             tid: 0L, $          ; data type id
             sid: 0L, $          ; dataspace id
             gid: 0L, $          ; group id,
-            ndx: 0L, $          ; index of current image
+            index: 0L, $        ; index of current image
             step: 0L, $         ; number of frames to advance per step
             readonly:0L $       ; read-only flag
            }
