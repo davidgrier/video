@@ -76,6 +76,9 @@
 ;        If no argument is given, returns currently
 ;        active image in currently active group.
 ;
+;    h5video::Read, [name|index], data=data
+;        Procedural interface for Read() method.
+;
 ;    h5video::Metadata([index])
 ;        Returns metadata for the image numbered INDEX
 ;        OPTIONAL ARGUMENT:
@@ -307,6 +310,18 @@ function h5video::timestamp
   COMPILE_OPT IDL2, HIDDEN
 
   return, string(systime(/seconds), format = '(F017.6)')  
+end
+
+;;;;;
+;
+; h5video::Read
+;
+;
+pro h5video::Read, id, data = data
+
+  COMPILE_OPT IDL2, HIDDEN
+
+  data = self.read(id)
 end
 
 ;;;;;
