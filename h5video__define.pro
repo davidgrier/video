@@ -25,41 +25,45 @@
 ;        I: Can be set at initialization
 ;        G: Can be retrieved with GetProperty
 ;        S: Can be changed with SetProperty
-;    DATA:
-;        [ G ] Image data for the currently active image
-;    FILENAME:
-;        [IG ] Name of the HDF5 file.  Default: h5video.h5
-;    GROUP:
-;        [ GS] Name of currently active group.  Default: images
-;    METADATA:
-;        [IGS] Structure containing metadata for the current
-;        group.  Default: !NULL
-;    FILE_METADATA:
-;        [IGS] Structure containing metadata for the file.
-;        Default: !NULL
-;    INDEX:
-;        [IGS] Index of the currently active image within the
-;        currently active group.  Reset to zero when GROUP changes.
-;    STEPSIZE:
-;        [IGS] Number by which INDEX advances between
-;        calls to Read().  Default: 1
-;    NIMAGES:
-;        [ G ] Number of images in the active group.
-;    NAMES:
-;        [ G ] Array of strings containing the names of the
+;
+; [ G ] DATA: Image data for the currently active image
+;
+; [IG ] FILENAME: Name of the HDF5 file.
+;         Default: h5video.h5
+;
+; [ GS] GROUP: Name of currently active group.
+;         Default: images
+;
+; [IGS] METADATA: Structure containing metadata for the current
+;         Default: !NULL
+;
+; [IGS] FILE_METADATA: Structure containing metadata for the file.
+;         Default: !NULL
+;
+; [IGS] INDEX: Index of the currently active image within the
+;        currently active group.  Resets to zero when GROUP changes.
+;
+; [IGS] STEPSIZE: Number by which INDEX advances between calls to
+;        Read().
+;        Default: 1
+;
+; [ G ] NIMAGES: Number of images in the active group.
+;
+; [ G ] NAMES: Array of strings containing the names of the
 ;        images in the currently active group.
-;    READONLY:
-;        [IG ] Flag.  If set, file has been opened read-only.
+;
+; [IG ] READONLY: Flag.  If set, file has been opened read-only.
 ;        No new data can be added to it.
 ;
 ; INITIALIZATION KEYWORD FLAGS:
 ;    By default, a previously existing file is opened
 ;    read-only, and a new file is opened for writing.
-
+;
 ;    WRITE: If set, open a pre-existing file for writing.
 ;        Data may be appended to existing groups, and
 ;        new groups and metadata may be written to the file.
-;    OVERWRITE: If set, erase any file with FILENAME and
+;
+;    OVERWRITE: If set, erase FILENAME and
 ;        create a new archive.
 ;
 ; METHODS:
