@@ -342,8 +342,13 @@ function h5video::Read, id
   on_error, 2
 
   if ~isa(id) then begin        ; read next frame in file (up to end)
-     name = h5g_get_obj_name_by_idx(self.gid, self.index)
-     self.index = (self.index + self.step) < (h5g_get_num_objs(self.gid) - 1UL)
+     nmax = h5g_get_num_objs(self.gid) - 1
+     if nmax lt 0 then begin
+        message, self.filename + ' contains no images', /inf
+        return, 0B
+     endif
+     name = h5g_get_obj_name_by_idx(self.gid, self.index < nmax)
+     self.index = (self.index + self.step) < nmax
   endif else if isa(id, /number, /scalar) then begin
      n = self.checkindex(id)
      if (n ge 0) then begin
