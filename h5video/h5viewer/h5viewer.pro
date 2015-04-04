@@ -91,7 +91,6 @@ pro h5viewer_event, event
               state['playing'] = 0
               state['video'].index = state['video'].index - 1
               h5viewer_draw, state
-              state['video'].index = state['video'].index - 1
            end
            
            'REWIND': begin
