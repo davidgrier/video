@@ -52,8 +52,10 @@
 ; [ G ] NAMES: Array of strings containing the names of the
 ;        images in the currently active group.
 ;
-; [IG ] READONLY: Flag.  If set, file has been opened read-only.
+; [IG ] READONLY: Flag. If set, file has been opened read-only.
 ;        No new data can be added to it.
+;
+; [IGS] QUIET: Flag. If set, do not issue warnings.
 ;
 ; INITIALIZATION KEYWORD FLAGS:
 ;    By default, a previously existing file is opened
@@ -279,7 +281,7 @@ function h5video::CheckIndex, index
               self.group + $
               ' with ' + $
               strtrim(n, 2) + $
-              ' is out of range.', /inf
+              ' is out of range.', /inf, noprint = self.quiet
      n mod= nimages
   endif
   if n lt 0 then $
@@ -535,7 +537,8 @@ pro h5video::SetProperty, group = group, $
                           index = index, $
                           stepsize = stepsize, $
                           metadata = metadata, $
-                          file_metadata = file_metadata
+                          file_metadata = file_metadata, $
+                          quiet = quiet
 
   COMPILE_OPT IDL2, HIDDEN
 
@@ -588,6 +591,9 @@ pro h5video::SetProperty, group = group, $
      h5s_close, sid
      h5t_close, tid
   endif
+
+  if isa(quiet) then $
+     self.quiet = keyword_set(quiet)
 end
 
 ;;;;;
@@ -604,7 +610,8 @@ pro h5video::GetProperty, data = data, $
                           nimages = nimages, $
                           names = names, $
                           images = images, $ ;; dump all images?
-                          readonly = readonly
+                          readonly = readonly, $
+                          quiet = quiet
 
   COMPILE_OPT IDL2, HIDDEN
 
@@ -618,7 +625,7 @@ pro h5video::GetProperty, data = data, $
      group = self.group
 
   if arg_present(index) then $
-     index = self.index
+     index = self.index > 0     ; could be negative before read() is called.
 
   if arg_present(stepsize) then $
      stepsize = self.step
@@ -662,6 +669,9 @@ pro h5video::GetProperty, data = data, $
 
   if arg_present(readonly) then $
      readonly = self.readonly
+
+  if arg_present(quiet) then $
+     quiet = self.quiet
 end
 
 ;;;;;
@@ -695,11 +705,12 @@ end
 ;
 function h5video::Init, filename, $
                         image = image, $
+                        index = index, $
                         metadata = metadata, $
                         overwrite = overwrite, $
                         write = write, $
-                        index = index, $
-                        stepsize = stepsize
+                        stepsize = stepsize, $
+                        quiet = quiet
 
   COMPILE_OPT IDL2, HIDDEN
 
@@ -757,9 +768,11 @@ function h5video::Init, filename, $
      h5t_close, tid
   endif
 
-  self.index = isa(index, /number, /scalar) ? long(index) > 0L : -1L
-  
   self.step = isa(stepsize, /number, /scalar) ? long(stepsize) > 1L : 1L
+
+  self.index = isa(index, /number, /scalar) ? self.checkindex(index) : -self.step
+
+  self.quiet = keyword_set(quiet)
 
   return, 1B
 end
@@ -782,6 +795,7 @@ pro h5video__define
             gid: 0L, $          ; group id,
             index: 0L, $        ; index of current image
             step: 0L, $         ; number of frames to advance per step
-            readonly:0L $       ; read-only flag
+            readonly:0L, $      ; read-only flag
+            quiet:0L $          ; don't issue warnings
            }
 end

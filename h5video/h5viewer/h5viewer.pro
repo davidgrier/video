@@ -11,8 +11,6 @@ function h5viewer_normalize, video
   video.group = 'background'
   bg = float(video.read(index))
   video.group = 'images'
-  video.index = index + 1
-  
   return, byte(100.*(image/bg))
 end
 
@@ -26,15 +24,15 @@ pro h5viewer_draw, state
   COMPILE_OPT IDL2, HIDDEN
 
   video = state['video']
-  widget_control, state['slider'], set_value = video.index
-  
+  index = video.index
+
   case state['style'] of
      'image': begin
-        data = video.read()
+        data = video.read(index)
      end
 
      'background': begin
-        data = video.read() ; already looking at background group
+        data = video.read(index) ; already looking at background group
      end
 
      'normalized': begin
@@ -49,8 +47,10 @@ pro h5viewer_draw, state
      else:
   endcase
 
+  widget_control, state['slider'], set_value = index
   state['image'].setproperty, data = data
   state['screen'].draw
+  video.index = index + 1
 end
 
 ;;;;;
@@ -89,7 +89,7 @@ pro h5viewer_event, event
 
            'BACK': begin
               state['playing'] = 0
-              state['video'].index = state['video'].index - 1
+              state['video'].index = state['video'].index - 2
               h5viewer_draw, state
            end
            
@@ -142,7 +142,7 @@ pro h5viewer,  h5file
 
   ;;; * check that file exists
   ;;; * open file dialog?
-  video = h5video(h5file)
+  video = h5video(h5file, /quiet)
   if ~isa(video, 'h5video') then begin
      message, 'Could not open '+h5file, /inf
      return
@@ -196,7 +196,6 @@ pro h5viewer,  h5file
   scene = IDLgrScene()
   scene.add, imageview
   screen.setproperty, graphics_tree = scene
-  screen.draw
 
   ;;; current state of system
   state = hash()
@@ -210,7 +209,6 @@ pro h5viewer,  h5file
   ;;; start event loop
   xmanager, 'h5viewer', wtop, /no_block, cleanup = 'h5viewer_cleanup'
 
-  image.setproperty, data = a
-  screen.draw
+  h5viewer_draw, state
 end
 
