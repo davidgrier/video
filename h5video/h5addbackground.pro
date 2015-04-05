@@ -14,7 +14,7 @@ pro h5addbackground, h5file, order
      name = video.name(n)
      video.group = 'background'
      video.write, median.get(), name
-     print, n, name
+     print, 'frame:', n, ' dataset:', name
   endfor
 
   obj_destroy, video

@@ -437,6 +437,48 @@ end
 
 ;;;;;
 ;
+; h5video::opendataset
+;
+function h5video::opendataset, name
+
+  COMPILE_OPT IDL2, HIDDEN
+
+  catch, error
+  if (error ne 0) then begin
+     catch, /cancel
+     did = h5d_open(self.gid, name)
+     return, did
+  endif
+
+  did = h5d_create(self.gid, name, self.tid, self.sid, gzip = 7)
+  return, did
+end
+
+;;;;;
+;
+; h5video::openannotation()
+;
+function h5video::openannotation, did, metadata
+
+  COMPILE_OPT IDL2, HIDDEN
+
+  catch, error
+  if (error ne 0) then begin
+     catch, /cancel
+     tid = h5t_idl_create(metadata)
+     sid = h5s_create_simple(1)
+     aid = h5a_create(did, 'metadata', tid, sid)
+     h5s_close, sid
+     h5t_close, tid
+     return, aid
+  endif
+  
+  aid = h5a_open_name(did, 'metadata')
+  return, aid
+end
+
+;;;;;
+;
 ; h5video::Write
 ;
 ; SYNTAX
@@ -454,15 +496,6 @@ pro h5video::Write, image, name, $
 
   COMPILE_OPT IDL2, HIDDEN
 
-  catch, error                  ; catch errors associated with writing data
-  if (error ne 0L) then begin
-     catch, /cancel
-     message, !ERROR_STATE.MSG, /inf
-     if did gt 0L then $
-        h5d_close, did
-     return
-  endif
-
   if self.readonly then begin
      message, self.filename + ' opened read-only', /inf
      return
@@ -474,18 +507,15 @@ pro h5video::Write, image, name, $
   endif
 
 ;; FIXME check dimensions and type
-  
+
   name = isa(name, 'string') ? name : self.timestamp()
-  did = h5d_create(self.gid, name, self.tid, self.sid, gzip = 7)
+  did = self.opendataset(name)
   h5d_write, did, image
+  
   if isa(metadata) then begin
-     tid = h5t_idl_create(metadata)
-     sid = h5s_create_simple(1)
-     aid = h5a_create(did, 'metadata', tid, sid)
+     aid = self.openannotation(did, metadata)
      h5a_write, aid, metadata
      h5a_close, aid
-     h5s_close, sid
-     h5t_close, tid
   endif
   h5d_close, did
 end
@@ -563,11 +593,8 @@ pro h5video::SetProperty, group = group, $
      endif
   endif
 
-  if isa(index, /number, /scalar) then begin
-     index = self.checkindex(index)
-     if (index ge 0L) then $
-        self.index = index
-  endif
+  if isa(index, /number, /scalar) then $
+     self.index = self.checkindex(index)
 
   if isa(stepsize, /number, /scalar) then $
      self.step = long(stepsize) > 1L

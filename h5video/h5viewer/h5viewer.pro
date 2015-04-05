@@ -14,7 +14,6 @@ function h5viewer_normalize, video
   return, byte(100.*(image/bg))
 end
 
-  
 ;;;;;
 ;
 ; h5viewer_draw
@@ -27,19 +26,19 @@ pro h5viewer_draw, state
   index = video.index
 
   case state['style'] of
-     'image': begin
+     0: begin
         data = video.read(index)
      end
 
-     'background': begin
+     1: begin
         data = video.read(index) ; already looking at background group
      end
 
-     'normalized': begin
+     2: begin
         data = h5viewer_normalize(video)
      end
 
-     'circletransformed': begin
+     3: begin
         image = h5viewer_normalize(video)
         data = bytscl(circletransform(image))
      end
@@ -51,6 +50,26 @@ pro h5viewer_draw, state
   state['image'].setproperty, data = data
   state['screen'].draw
   video.index = index + 1
+end
+
+;;;;;
+;
+; h5viewer_setstyle
+;
+function h5viewer_setstyle, event
+
+  COMPILE_OPT IDL2, HIDDEN
+
+  if event.select then begin
+     widget_control, event.top, get_uvalue = state
+     state['style'] = event.value
+     index = state['video'].index
+     state['video'].group = (event.value eq 1) ? 'background' : 'images'
+     state['video'].index = (index - 1) > 0L
+     h5viewer_draw, state
+  endif
+  
+  return, 0
 end
 
 ;;;;;
@@ -103,7 +122,10 @@ pro h5viewer_event, event
               widget_control, event.top, /destroy
            end
            
-           else: help, event
+           else: begin
+              print, uval
+              help, event
+              end
         endcase
      end
      
@@ -114,7 +136,10 @@ pro h5viewer_event, event
         h5viewer_draw, state
      end
 
-     else: help, event
+     else: begin
+        print, tag_names(event, /structure_name)
+        help, event
+        end
   endcase
 end
 
@@ -165,6 +190,10 @@ pro h5viewer,  h5file
                         ysize = dimensions[1] < ysize)
 
   ;; buttons
+  wradio = cw_bgroup(wtop, ['I(r)', 'I0(r)', 'b(r)', 'c(r)'], $
+                     set_value = 0, $
+                     event_func = 'h5viewer_setstyle', $
+                     /row, /exclusive, /return_index)
   wcontrols = widget_base(wtop, /row, xsize = xsize, /frame)
   wbuttons = widget_base(wcontrols, /row, /grid_layout, uvalue = 'WBUTTONS')
   void = widget_button(wbuttons, value = 'Rewind', uvalue = 'REWIND')
@@ -203,7 +232,7 @@ pro h5viewer,  h5file
   state['image'] = image
   state['screen'] = screen
   state['slider'] = wslider
-  state['style'] = 'circletransformed'
+  state['style'] = 0
   widget_control, wtop, set_uvalue = state
 
   ;;; start event loop
