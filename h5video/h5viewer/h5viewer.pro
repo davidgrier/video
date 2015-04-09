@@ -26,24 +26,14 @@ pro h5viewer_draw, state
   index = video.index
 
   case state['style'] of
-     0: begin
-        data = video.read(index)
-     end
-
-     1: begin
-        data = video.read(index) ; already looking at background group
-     end
-
-     2: begin
-        data = h5viewer_normalize(video)
-     end
-
-     3: begin
+     0: data = video.read(index)         ; raw images
+     1: data = video.read(index)         ; already looking at background group
+     2: data = h5viewer_normalize(video) ; normalized
+     3: begin                            ; circletransformed image
         image = h5viewer_normalize(video)
         data = bytscl(circletransform(image))
      end
-
-     4: begin
+     4: begin                            ; labeled regions
         image = h5viewer_normalize(video)
         ct = circletransform(image)
         res = moment(ct, maxmoment = 2)
@@ -92,48 +82,58 @@ pro h5viewer_event, event
 
   widget_control, event.top, get_uvalue = state
 
+  redraw = 1                    ; don't redraw on PAUSE or QUIT
   case tag_names(event, /structure_name) of
      'WIDGET_TIMER': begin
-        if state['playing'] then begin
+        if state['playing'] then $
            widget_control, event.top, timer = 1./30.
-           h5viewer_draw, state
-        endif
      end
      
      'WIDGET_BUTTON': begin
-        widget_control, event.id, get_uvalue = uval
-        case uval of
+        widget_control, event.id, get_uvalue = uvalue
+        case uvalue of
            'PLAY': begin
               state['playing'] = 1
               widget_control, event.top, timer = 1./30.
-              h5viewer_draw, state
            end
 
-           'STEP': begin
-              state['playing'] = 0
-              h5viewer_draw, state
-           end
+           'STEP': state['playing'] = 0
            
-           'PAUSE': state['playing'] = 0
+           'PAUSE': begin
+              state['playing'] = 0
+              redraw = 0
+           end           
 
            'BACK': begin
               state['playing'] = 0
               state['video'].index = state['video'].index - 2
-              h5viewer_draw, state
            end
            
-           'REWIND': begin
-              state['video'].index = 0
-              h5viewer_draw, state
+           'REWIND': state['video'].index = 0
+
+           'OPEN':begin
+              state['playing'] = 0
+              file = state['file']
+              state.remove, 'file'
+              h5viewer_openvideo, state
+              if state.haskey('error') then begin
+                 message, state['error'], /inf
+                 message, 'Reverting to '+file_basename(file), /inf
+                 state['file'] = file
+                 state.remove, 'error'
+                 redraw = 0
+              endif
+              ;;; FIXME: Resize graphics and widgets!!!
            end
            
            'QUIT': begin
               state['playing'] = 0
+              redraw = 0
               widget_control, event.top, /destroy
            end
            
            else: begin
-              print, uval
+              print, uvalue
               help, event
               end
         endcase
@@ -143,7 +143,6 @@ pro h5viewer_event, event
         state['playing'] = 0
         widget_control, event.id, get_value = index
         state['video'].index = index
-        h5viewer_draw, state
      end
 
      else: begin
@@ -151,6 +150,8 @@ pro h5viewer_event, event
         help, event
         end
   endcase
+  
+  if redraw then h5viewer_draw, state
 end
 
 ;;;;;
@@ -169,29 +170,61 @@ end
 
 ;;;;;
 ;
-; h5viewer
+; h5viewer_openvideo
 ;
-pro h5viewer,  h5file
+pro h5viewer_openvideo, state
 
   COMPILE_OPT IDL2
 
-  ;;; * check that file exists
-  ;;; * open file dialog?
-  video = h5video(h5file, /quiet)
-  if ~isa(video, 'h5video') then begin
-     message, 'Could not open '+h5file, /inf
+  suffix = '.h5'
+  if ~state.haskey('file') then begin
+     file = dialog_pickfile(/read, $
+                            filter = '*'+suffix, /fix_filter, $
+                            default_extension = suffix, $
+                            title = 'Select h5video file')
+     
+     state['file'] = file[0]
+  endif
+
+  file = state['file']
+  name = file_basename(file, suffix)
+  if (name eq suffix) || (strlen(name) eq 0) then begin
+     state['error'] = 'ERROR: No file specified'
      return
   endif
-  a = video.read()
-  dimensions = size(a, /dimensions)
-
-  ;;; Widget layout
-  wtop = widget_base(/column, title = 'H5Player', $
-                     mbar = bar)
-
-  h5viewer_menu, bar
   
+  if file_search(file, /test_regular, /test_read) then begin
+     video = h5video(file, /quiet)
+     if ~isa(video, 'h5video') then begin
+        state['error'] = 'ERROR: ' + file + ' is not an h5video file'
+        return
+     endif
+  endif else begin
+     state['error'] = 'ERROR: Could not find ' + file
+     return
+  endelse
+
+  state['video'] = video
+  video.read                    ; load first image
+end
+
+;;;;;
+;
+; h5viewer_widgets
+;
+pro h5viewer_widgets, state
+
+  COMPILE_OPT IDL2, HIDDEN
+
+  wtop = widget_base(/column, title = 'H5Player', mbar = bar)
+
+  ;;; File menu
+  file_menu = widget_button(bar, value = 'File', /menu)
+  void = widget_button(file_menu, value = 'Open', uvalue = 'OPEN')
+  void = widget_button(file_menu, value = 'Quit', uvalue = 'QUIT')
+
   ;;; FIXME set screen size
+  dimensions = state['video'].dimensions
   xsize = dimensions[0] < 640
   ysize = dimensions[0] < 480
   wscreen = widget_draw(wtop, frame = 1, $
@@ -220,22 +253,35 @@ pro h5viewer,  h5file
   slider_size = scr_geom.xsize - but_geom.xsize - top_geom.xpad
   wslider = widget_slider(wcontrols, $
                           xsize = slider_size, $
-                          minimum = 0, maximum = video.nimages-1, $
+                          minimum = 0, maximum = state['video'].nimages-1, $
                           /drag)
   
   ;;; realize widget hierarchy
   widget_control, wtop, /realize
   widget_control, wscreen, get_value = screen
 
-  ;;; graphics hierarchy
-  image = IDLgrImage(a, /interpolate)
+  state['screen'] = screen
+  state['slider'] = wslider
+  widget_control, wtop, set_uvalue = state
+
+  xmanager, 'h5viewer', wtop, /no_block, cleanup = 'h5viewer_cleanup'
+end
+
+;;;;;
+;
+; h5viewer_graphics
+;
+pro h5viewer_graphics, state
+
+  COMPILE_OPT IDL2, HIDDEN
+  
+  image = IDLgrImage(state['video'].data, /interpolate)
   imagemodel = IDLgrModel()
   imagemodel.add, image
-  imageview = IDLgrView(viewplane_rect = [0, 0, dimensions])
+  imageview = IDLgrView(viewplane_rect = [0, 0, state['video'].dimensions])
   imageview.add, imagemodel
   scene = IDLgrScene()
   scene.add, imageview
-  screen.setproperty, graphics_tree = scene
 
   ;;; color tables for images
   grey = IDLgrPalette()
@@ -248,20 +294,45 @@ pro h5viewer,  h5file
   b[0] = 128
   rgb.setproperty, red = r, green = g, blue = b
 
-  ;;; current state of system
-  state = hash()
-  state['video'] = video
+  image.setproperty, palette = (state['style'] eq 4) ? rgb : grey
+
+  ;;; update system state
   state['image'] = image
-  state['screen'] = screen
-  state['slider'] = wslider
-  state['style'] = 0
   state['grey'] = grey
   state['rgb'] = rgb
-  widget_control, wtop, set_uvalue = state
-  
-  ;;; start event loop
-  xmanager, 'h5viewer', wtop, /no_block, cleanup = 'h5viewer_cleanup'
-  
-  h5viewer_draw, state
+
+  ;;; install graphics within widget hierarchy
+  state['screen'].setproperty, graphics_tree = scene
 end
 
+;;;;;
+;
+; h5viewer
+;
+pro h5viewer, h5file
+
+  COMPILE_OPT IDL2
+
+  state = hash()
+
+  ;;; open video file
+  if n_params() eq 1 then $
+     state['file'] = h5file
+
+  h5viewer_openvideo, state
+  if state.haskey('error') then begin
+     message, state['error'], /inf
+     return
+  endif
+  
+  state['style'] = 0            ; start by showing raw images
+
+  ;;; create widget hierarchy and start event loop
+  h5viewer_widgets, state
+  
+  ;;; create and install graphics hierarchy
+  h5viewer_graphics, state
+
+  ;;; draw first image
+  h5viewer_draw, state
+end
