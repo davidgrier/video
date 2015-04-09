@@ -11,7 +11,7 @@ function h5viewer_normalize, video
   video.group = 'background'
   bg = float(video.read(index))
   video.group = 'images'
-  return, byte(100.*(image/bg))
+  return, byte(100.*(image/bg) < 255.)
 end
 
 ;;;;;
@@ -42,7 +42,15 @@ pro h5viewer_draw, state
         image = h5viewer_normalize(video)
         data = bytscl(circletransform(image))
      end
-     
+
+     4: begin
+        image = h5viewer_normalize(video)
+        ct = circletransform(image)
+        res = moment(ct, maxmoment = 2)
+        threshold = res[0] + 3.*sqrt(res[1])
+        data = label_region(ct ge threshold)
+     end
+
      else:
   endcase
 
@@ -66,6 +74,8 @@ function h5viewer_setstyle, event
      index = state['video'].index
      state['video'].group = (event.value eq 1) ? 'background' : 'images'
      state['video'].index = (index - 1) > 0L
+     state['image'].setproperty, palette = (event.value eq 4) ? $
+                                           state['rgb'] : state['grey']
      h5viewer_draw, state
   endif
   
@@ -190,11 +200,11 @@ pro h5viewer,  h5file
                         ysize = dimensions[1] < ysize)
 
   ;; buttons
-  wradio = cw_bgroup(wtop, ['I(r)', 'I0(r)', 'b(r)', 'c(r)'], $
+  wradio = cw_bgroup(wtop, ['I(r)', 'I0(r)', 'b(r)', 'c(r)', 'fn(r)'], $
                      set_value = 0, $
                      event_func = 'h5viewer_setstyle', $
                      /row, /exclusive, /return_index)
-  wcontrols = widget_base(wtop, /row, xsize = xsize, /frame)
+  wcontrols = widget_base(wtop, /row, /base_align_bottom, xsize = xsize, /frame)
   wbuttons = widget_base(wcontrols, /row, /grid_layout, uvalue = 'WBUTTONS')
   void = widget_button(wbuttons, value = 'Rewind', uvalue = 'REWIND')
   void = widget_button(wbuttons, value = 'Back', uvalue = 'BACK')
@@ -226,6 +236,17 @@ pro h5viewer,  h5file
   scene.add, imageview
   screen.setproperty, graphics_tree = scene
 
+  ;;; color tables for images
+  grey = IDLgrPalette()
+  grey.loadct, 0                ; greyscale
+  rgb = IDLgrPalette()
+  rgb.loadct, 38                ; lots of colors
+  rgb.getproperty, red = r, green = g, blue = b
+  r[0] = 128                    ; medium grey background
+  g[0] = 128
+  b[0] = 128
+  rgb.setproperty, red = r, green = g, blue = b
+
   ;;; current state of system
   state = hash()
   state['video'] = video
@@ -233,11 +254,15 @@ pro h5viewer,  h5file
   state['screen'] = screen
   state['slider'] = wslider
   state['style'] = 0
+  state['grey'] = grey
+  state['rgb'] = rgb
   widget_control, wtop, set_uvalue = state
-
+  
   ;;; start event loop
   xmanager, 'h5viewer', wtop, /no_block, cleanup = 'h5viewer_cleanup'
-
+  
+  
+  
   h5viewer_draw, state
 end
 
