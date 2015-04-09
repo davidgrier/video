@@ -31,11 +31,11 @@ pro h5viewer_draw, state
      2: data = h5viewer_normalize(video) ; normalized
      3: begin                            ; circletransformed image
         image = h5viewer_normalize(video)
-        data = bytscl(circletransform(image))
+        data = bytscl(circletransform(image, smooth = state['smooth']))
      end
      4: begin                            ; labeled regions
         image = h5viewer_normalize(video)
-        ct = circletransform(image)
+        ct = circletransform(image, smooth = state['smooth'])
         res = moment(ct, maxmoment = 2)
         threshold = res[0] + 3.*sqrt(res[1])
         data = label_region(ct ge threshold)
@@ -146,9 +146,28 @@ pro h5viewer_event, event
      end
 
      else: begin
-        print, tag_names(event, /structure_name)
-        help, event
-        end
+        widget_control, event.id, get_uvalue = uvalue
+        case uvalue of
+           'SMOOTH': begin
+              smooth = event.value
+              if (smooth lt 0) || (smooth gt 10) then begin
+                 smooth = smooth > 0 < 10
+                 widget_control, event.id, set_value = smooth
+              endif
+              state['smooth'] = smooth
+              if state['style'] ge 2 then $
+                 state['video'].index = state['video'].index - 1 $
+              else $
+                 redraw = 0
+           end
+
+           else: begin
+              print, 'unknown widget'
+              print, tag_names(event, /structure_name)
+              help, event
+           end
+        endcase
+     end
   endcase
   
   if redraw then h5viewer_draw, state
@@ -223,6 +242,7 @@ pro h5viewer_widgets, state
   void = widget_button(file_menu, value = 'Open', uvalue = 'OPEN')
   void = widget_button(file_menu, value = 'Quit', uvalue = 'QUIT')
 
+  ;;; Image screen
   ;;; FIXME set screen size
   dimensions = state['video'].dimensions
   xsize = dimensions[0] < 640
@@ -232,13 +252,19 @@ pro h5viewer_widgets, state
                         xsize = dimensions[0] < xsize, $
                         ysize = dimensions[1] < ysize)
 
-  ;; buttons
-  wradio = cw_bgroup(wtop, ['I(r)', 'I0(r)', 'b(r)', 'c(r)', 'fn(r)'], $
-                     set_value = 0, /exclusive, /return_index, $
-                     /row, ypad = 0, $
-                     event_func = 'h5viewer_setstyle')
+  ;;; State selection
+  wselection = widget_base(wtop, /row, ypad = 0, /base_align_center)
+  void = cw_bgroup(wselection, ['I(r)', 'I0(r)', 'b(r)', 'c(r)', 'fn(r)'], $
+                   set_value = 0, /exclusive, /return_index, $
+                   /row, ypad = 0, $
+                   event_func = 'h5viewer_setstyle')
+  void = cw_field(wselection, title = 'smooth:', /integer, /return_events, $
+                  value = 0, uvalue = 'SMOOTH')
+
+  ;;; Player controls
   wcontrols = widget_base(wtop, /frame, xsize = xsize, $
                           /row, ypad = 0, /base_align_bottom)
+  ;;; ... buttons
   wbuttons = widget_base(wcontrols, /row, /grid_layout, ypad = 0)
   void = widget_button(wbuttons, value = 'Rewind', uvalue = 'REWIND')
   void = widget_button(wbuttons, value = 'Back', uvalue = 'BACK')
@@ -246,7 +272,7 @@ pro h5viewer_widgets, state
   void = widget_button(wbuttons, value = 'Step', uvalue = 'STEP')
   void = widget_button(wbuttons, value = 'Play', uvalue = 'PLAY')
 
-  ;; slider
+  ;;; ... slider
   top_geom = widget_info(wtop, /geometry)
   but_geom = widget_info(wbuttons, /geometry)
   scr_geom = widget_info(wscreen, /geometry)
@@ -256,14 +282,19 @@ pro h5viewer_widgets, state
                           minimum = 0, maximum = state['video'].nimages-1, $
                           /drag)
   
-  ;;; realize widget hierarchy
+  ;;; Realize the widget hierarchy
   widget_control, wtop, /realize
   widget_control, wscreen, get_value = screen
 
+  ;;; Update the state
+  state['smooth'] = 0
   state['screen'] = screen
   state['slider'] = wslider
+
+  ;;; Link the state to the top-level widget
   widget_control, wtop, set_uvalue = state
 
+  ;;; Start the widget event loop
   xmanager, 'h5viewer', wtop, /no_block, cleanup = 'h5viewer_cleanup'
 end
 
@@ -289,7 +320,7 @@ pro h5viewer_graphics, state
   rgb = IDLgrPalette()
   rgb.loadct, 38                ; lots of colors
   rgb.getproperty, red = r, green = g, blue = b
-  r[0] = 128                    ; medium grey background
+  r[0] = 128                    ; medium grey background to match data
   g[0] = 128
   b[0] = 128
   rgb.setproperty, red = r, green = g, blue = b
