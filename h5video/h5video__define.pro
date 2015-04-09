@@ -297,6 +297,8 @@ pro h5video::timestamp, loc_id, str
 
   COMPILE_OPT IDL2, HIDDEN
 
+  if self.readonly then return
+  
   ts = 'Created on ' + systime(0)
   
   tid = h5t_idl_create(ts)
@@ -368,6 +370,9 @@ function h5video::Read, id
   did = h5d_open(self.gid, name)
   image = h5d_read(did)
   h5d_close, did
+
+  if total(self.dimensions) eq 0 then $
+     self.dimensions = size(image, /dimensions)
   
   return, image
 end
@@ -500,13 +505,19 @@ pro h5video::Write, image, name, $
      message, self.filename + ' opened read-only', /inf
      return
   endif
-  
-  if ~self.tid then begin
-     self.tid = h5t_idl_create(image)        ; data type
-     self.sid = h5s_create_simple(size(image, /dimensions)) ; data space
-  endif
 
-;; FIXME check dimensions and type
+  dimensions = size(image, /dimensions)
+  if (total(self.dimensions) eq 0) then begin
+     self.dimensions = dimensions
+     self.sid = h5s_create_simple(dimensions)
+  endif else if ~array_equal(dimensions, self.dimensions) then begin
+     message, 'data must have same dimensions as archive.', /inf
+     message, 'Not written.', /inf
+     return
+  endif
+  
+  if ~self.tid then $
+     self.tid = h5t_idl_create(image)         ; data type
 
   name = isa(name, 'string') ? name : self.timestamp()
   did = self.opendataset(name)
@@ -629,6 +640,7 @@ end
 ;
 pro h5video::GetProperty, data = data, $
                           filename = filename, $
+                          dimensions = dimensions, $
                           group = group, $
                           index = index, $
                           stepsize = stepsize, $
@@ -647,6 +659,9 @@ pro h5video::GetProperty, data = data, $
   
   if arg_present(filename) then $
      filename = self.filename
+
+  if arg_present(dimensions) then $
+     dimensions = self.dimensions
   
   if arg_present(group) then $
      group = self.group
@@ -765,21 +780,21 @@ function h5video::Init, filename, $
         message, 'Could not open '+self.filename+': not an HDF5 file', /inf
         return, 0B
      endelse
-  endif else begin                        ; file does not exist
+  endif else begin              ; file does not exist
      self.fid = h5f_create(self.filename) ; ... so create new HDF5 file
      self.timestamp, self.fid
   endelse
 
   self.group = 'images'         ; every video has images
   gid = self.h5g_open(self.fid, self.group)
-  if (gid eq 0L) then begin
+  if (gid eq 0L) then $
      gid = h5g_create(self.fid, self.group)
-     if (gid gt 0L) then self.timestamp, gid
-  endif
-  if (gid eq 0L) then begin
+  if (gid gt 0L) then $
+     self.timestamp, gid $
+  else begin
      h5f_close, self.fid
      return, 0B
-  endif
+  endelse
   self.gid = gid
 
   if isa(image, /number, /array) then $
@@ -815,14 +830,15 @@ pro h5video__define
   struct = {h5video, $
             inherits IDL_Object, $
             filename: '', $
-            group: '', $        ; name of active group
-            fid: 0L, $          ; file id
-            tid: 0L, $          ; data type id
-            sid: 0L, $          ; dataspace id
-            gid: 0L, $          ; group id,
-            index: 0L, $        ; index of current image
-            step: 0L, $         ; number of frames to advance per step
-            readonly:0L, $      ; read-only flag
-            quiet:0L $          ; don't issue warnings
+            dimensions: [0L, 0], $ ; dimensions of images
+            group: '', $           ; name of active group
+            fid: 0L, $             ; file id
+            tid: 0L, $             ; data type id
+            sid: 0L, $             ; dataspace id
+            gid: 0L, $             ; group id,
+            index: 0L, $           ; index of current image
+            step: 0L, $            ; number of frames to advance per step
+            readonly:0L, $         ; read-only flag
+            quiet:0L $             ; don't issue warnings
            }
 end
