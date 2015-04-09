@@ -201,11 +201,12 @@ pro h5viewer,  h5file
 
   ;; buttons
   wradio = cw_bgroup(wtop, ['I(r)', 'I0(r)', 'b(r)', 'c(r)', 'fn(r)'], $
-                     set_value = 0, $
-                     event_func = 'h5viewer_setstyle', $
-                     /row, /exclusive, /return_index)
-  wcontrols = widget_base(wtop, /row, /base_align_bottom, xsize = xsize, /frame)
-  wbuttons = widget_base(wcontrols, /row, /grid_layout, uvalue = 'WBUTTONS')
+                     set_value = 0, /exclusive, /return_index, $
+                     /row, ypad = 0, $
+                     event_func = 'h5viewer_setstyle')
+  wcontrols = widget_base(wtop, /frame, xsize = xsize, $
+                          /row, ypad = 0, /base_align_bottom)
+  wbuttons = widget_base(wcontrols, /row, /grid_layout, ypad = 0)
   void = widget_button(wbuttons, value = 'Rewind', uvalue = 'REWIND')
   void = widget_button(wbuttons, value = 'Back', uvalue = 'BACK')
   void = widget_button(wbuttons, value = 'Pause', uvalue = 'PAUSE')
@@ -260,8 +261,6 @@ pro h5viewer,  h5file
   
   ;;; start event loop
   xmanager, 'h5viewer', wtop, /no_block, cleanup = 'h5viewer_cleanup'
-  
-  
   
   h5viewer_draw, state
 end
