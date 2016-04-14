@@ -300,14 +300,8 @@ pro h5video::timestamp, loc_id, str
   if self.readonly then return
   
   ts = 'Created on ' + systime(0)
-  
-  tid = h5t_idl_create(ts)
-  sid = h5s_create_simple(1)
-  aid = h5a_create(loc_id, 'timestamp', tid, sid)
-  h5a_write, aid, ts
-  h5a_close, aid
-  h5s_close, sid
-  h5t_close, tid
+
+  self.annotate, loc_id, 'timestamp', ts
 end
 
 ;;;;;
@@ -461,27 +455,25 @@ end
 
 ;;;;;
 ;
-; h5video::openannotation()
+; h5video::annotate
 ;
-function h5video::openannotation, did, metadata
+; Purpose: add annotation to an object
+;
+pro h5video::annotate, target, name, data
 
   COMPILE_OPT IDL2, HIDDEN
 
-  catch, error
-  if (error ne 0) then begin
-     catch, /cancel
-     tid = h5t_idl_create(metadata)
-     sid = h5s_create_simple(1)
-     aid = h5a_create(did, 'metadata', tid, sid)
-     h5s_close, sid
-     h5t_close, tid
-     return, aid
-  endif
+  if self.readonly then return
   
-  aid = h5a_open_name(did, 'metadata')
-  return, aid
+  tid = h5t_idl_create(data)
+  sid = h5s_create_simple(1)
+  aid = h5a_create(target, name, tid, sid)
+  h5a_write, aid, data
+  h5a_close, aid
+  h5s_close, sid
+  h5t_close, tid
 end
-
+  
 ;;;;;
 ;
 ; h5video::Write
@@ -495,6 +487,11 @@ end
 ; Optional Input:
 ; name: string containing name of image.
 ;     Default: string containing timestamp
+;
+; Keyword Input:
+; metadata: variable or structure constituting metadata
+;     for the image.
+;     Default: no metadata
 ;
 pro h5video::Write, image, name, $
                     metadata = metadata
@@ -523,11 +520,9 @@ pro h5video::Write, image, name, $
   did = self.opendataset(name)
   h5d_write, did, image
   
-  if isa(metadata) then begin
-     aid = self.openannotation(did, metadata)
-     h5a_write, aid, metadata
-     h5a_close, aid
-  endif
+  if isa(metadata) then $
+     self.annotate, did, 'metadata', metadata
+  
   h5d_close, did
 end
 
@@ -569,7 +564,6 @@ function h5video::H5G_OPEN, loc_id, group
   return, h5g_open(loc_id, group)
 end
 
-
 ;;;;;
 ;
 ; h5video::SetProperty
@@ -610,25 +604,11 @@ pro h5video::SetProperty, group = group, $
   if isa(stepsize, /number, /scalar) then $
      self.step = long(stepsize) > 1L
 
-  if isa(metadata) && ~self.readonly then begin
-     tid = h5t_idl_create(metadata)
-     sid = h5s_create_simple(1)
-     aid = h5a_create(self.gid, 'metadata', tid, sid)
-     h5a_write, aid, metadata
-     h5a_close, aid
-     h5s_close, sid
-     h5t_close, tid
-  endif
+  if isa(metadata) then $
+     self.annotate, self.gid, 'metadata', metadata
 
-  if isa(file_metadata) && ~self.readonly then begin
-     tid = h5t_idl_create(file_metadata)
-     sid = h5s_create_simple(1)
-     aid = h5a_create(self.fid, 'metadata', tid, sid)
-     h5a_write, aid, file_metadata
-     h5a_close, aid
-     h5s_close, sid
-     h5t_close, tid
-  endif
+  if isa(file_metadata) then $
+     self.annotate, self.fid, 'metadata', file_metadata
 
   if isa(quiet) then $
      self.quiet = keyword_set(quiet)
@@ -800,16 +780,9 @@ function h5video::Init, filename, $
   if isa(image, /number, /array) then $
      self.write, image
 
-  if isa(metadata) && ~self.readonly then begin
-     tid = h5t_idl_create(metadata)
-     sid = h5s_create_simple(1)
-     aid = h5a_create(self.fid, 'metadata', tid, sid)
-     h5a_write, aid, metadata
-     h5a_close, aid
-     h5s_close, sid
-     h5t_close, tid
-  endif
-
+  if isa(metadata) then $
+     self.annotate, self.fid, 'metadata', metadata
+  
   self.step = isa(stepsize, /number, /scalar) ? long(stepsize) > 1L : 1L
 
   self.index = isa(index, /number, /scalar) ? self.checkindex(index) : -self.step

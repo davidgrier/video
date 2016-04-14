@@ -243,10 +243,11 @@ pro h5viewer_widgets, state
   void = widget_button(file_menu, value = 'Quit', uvalue = 'QUIT')
 
   ;;; Image screen
-  ;;; FIXME set screen size
   dimensions = state['video'].dimensions
-  xsize = dimensions[0] < 640
-  ysize = dimensions[0] < 480
+  scr_dim = 0.80*get_screen_size()
+  fac = min(scr_dim/dimensions) < 1.
+  xsize = round(fac*dimensions[0])
+  ysize = round(fac*dimensions[1])
   wscreen = widget_draw(wtop, frame = 1, $
                         graphics_level = 2, $
                         xsize = dimensions[0] < xsize, $
@@ -349,19 +350,17 @@ pro h5viewer, h5file
   ;;; open video file
   if n_params() eq 1 then $
      state['file'] = h5file
-
   h5viewer_openvideo, state
   if state.haskey('error') then begin
      message, state['error'], /inf
      return
   endif
   
-  state['style'] = 0            ; start by showing raw images
-
   ;;; create widget hierarchy and start event loop
   h5viewer_widgets, state
   
   ;;; create and install graphics hierarchy
+  state['style'] = 0            ; start by showing raw images
   h5viewer_graphics, state
 
   ;;; draw first image
