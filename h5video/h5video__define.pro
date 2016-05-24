@@ -627,6 +627,7 @@ pro h5video::GetProperty, data = data, $
                           metadata = metadata, $
                           file_metadata = file_metadata, $
                           nimages = nimages, $
+                          count = count, $
                           names = names, $
                           images = images, $ ;; dump all images?
                           readonly = readonly, $
@@ -672,6 +673,9 @@ pro h5video::GetProperty, data = data, $
   
   if arg_present(nimages) then $
      nimages = h5g_get_num_objs(self.gid)
+
+  if arg_present(count) then $
+     count = h5g_get_num_objs(self.gid)
 
   if arg_present(names) then begin
      nimages = h5g_get_num_objs(self.gid)
