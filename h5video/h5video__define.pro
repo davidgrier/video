@@ -154,15 +154,18 @@
 ;
 ; Transcode images from active group to standard video format
 ;
-pro h5video::Transcode
+pro h5video::Transcode, fps = fps
 
   COMPILE_OPT IDL2, HIDDEN
 
   fn = file_basename(self.filename, '.h5')
   if (self.group ne 'images') then $
      fn += '_' + self.group
-  fn += '.mp4'
+  fn += '.avi'
   video = IDLffVideoWrite(fn)
+  
+  fps = isa(fps, /scalar, /number) ? fix(fps) : 30
+  codec = 'libvpx'
   
   image = self.read()
   sz = image.dim
@@ -170,7 +173,7 @@ pro h5video::Transcode
   case image.ndim of
      2: begin
         image = bytarr(3, sz[0], sz[1], /nozero)
-        sid = video.addvideostream(sz[0], sz[1], 30)
+        sid = video.addvideostream(sz[0], sz[1], fps, codec = codec)
         foreach im, self do begin
            image[0, *, *] = im
            image[1, *, *] = im
@@ -179,7 +182,7 @@ pro h5video::Transcode
         endforeach
         end
      3: begin
-        sid = video.addstream(sz[1], sz[2], 30)
+        sid = video.addstream(sz[1], sz[2], fps, codec = codec)
         foreach image, self do $
            time = video.put(sid, image)
         end
