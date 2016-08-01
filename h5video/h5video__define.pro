@@ -163,6 +163,13 @@ pro h5video::Transcode, fps = fps
      fn += '_' + self.group
   fn += '.avi'
   video = IDLffVideoWrite(fn)
+
+  aid = self.h5a_open_name(self.fid, 'metadata')
+  if (aid gt 0L) then begin
+     file_metadata = h5a_read(aid)
+     video.setmetadata, 'comment', json_serialize(file_metadata)
+     h5a_close, aid
+  endif
   
   fps = isa(fps, /scalar, /number) ? fix(fps) : 30
   codec = 'libvpx'
@@ -452,7 +459,8 @@ function h5video::opendataset, name
      return, did
   endif
 
-  did = h5d_create(self.gid, name, self.tid, self.sid, gzip = 7)
+  did = h5d_create(self.gid, name, self.tid, self.sid, $
+                   chunk_dimensions = self.dimensions, gzip = 9)
   return, did
 end
 
@@ -519,7 +527,8 @@ pro h5video::Write, image, name, $
   if ~self.tid then $
      self.tid = h5t_idl_create(image)         ; data type
 
-  name = isa(name, 'string') ? name : self.timestamp()
+  if ~isa(name, 'string') then $
+     name = self.timestamp()
   did = self.opendataset(name)
   h5d_write, did, image
   
