@@ -144,9 +144,12 @@
 ;     File and each group is stamped with date of creation.
 ; 02/14/2015 DGG Initialization metadata is written to the file.
 ;     The METADATA property refers to the active group.
-; 02/16/2015 DGG Added DATA keyword for compatibility with camera objects.
+; 02/16/2015 DGG Added DATA keyword for compatibility with camera
+;     objects.
+; 09/29/2016 DGG Do not create file unless WRITE or OVERWRITE flags
+;     are set.
 ;
-; Copyright (c) 2015 David G. Grier
+; Copyright (c) 2015-2016 David G. Grier
 ;-
 ;;;;;
 ;
@@ -161,7 +164,7 @@ pro h5video::Transcode, fps = fps
   fn = file_basename(self.filename, '.h5')
   if (self.group ne 'images') then $
      fn += '_' + self.group
-  fn += '.avi'
+  fn += '.mkv'
   video = IDLffVideoWrite(fn)
 
   aid = self.h5a_open_name(self.fid, 'metadata')
@@ -172,7 +175,8 @@ pro h5video::Transcode, fps = fps
   endif
   
   fps = isa(fps, /scalar, /number) ? fix(fps) : 30
-  codec = 'libvpx'
+                                ;codec = 'libvpx'
+  codec = 'rawvideo'
   
   image = self.read()
   sz = image.dim
@@ -773,12 +777,17 @@ function h5video::Init, filename, $
         self.fid = h5f_open(self.filename, $ ; ... or open it, if it's HDF5
                             write = ~self.readonly)
      endif else begin                        ; ... or fail
-        message, 'Could not open '+self.filename+': not an HDF5 file', /inf
+        message, 'Could not open ' + self.filename + ': not an HDF5 file', /inf
         return, 0B
      endelse
   endif else begin              ; file does not exist
-     self.fid = h5f_create(self.filename) ; ... so create new HDF5 file
-     self.timestamp, self.fid
+     if keyword_set(write) or keyword_set(overwrite) then begin
+        self.fid = h5f_create(self.filename) ; create new HDF5 file
+        self.timestamp, self.fid
+     endif else begin
+        message, 'Could not open ' + self.filename + ': file not found', /inf
+        return, 0B
+     endelse
   endelse
 
   self.group = 'images'         ; every video has images
